@@ -1,0 +1,66 @@
+table {
+  width: 100%;
+}
+
+th {
+  color: white;
+}
+
+th.mat-header-cell div {
+  margin-bottom: 10px;
+}
+
+tr td.mat-cell:last-child {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+th input,
+th mat-select {
+  background-color: var(--color0);
+  color: var(--color3);
+  font-size: 10px;
+  padding: 5px;
+  width: calc(100% - 16px);
+
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+td.mat-cell,
+th.mat-header-cell {
+  padding: 16px 10px;
+}
+
+tr th.mat-header-cell:last-child {
+  padding-right: 24px;
+  text-align: right;
+}
+
+th.mat-column-vigencia,
+th.mat-column-version {
+  width: 7%;
+}
+
+th.mat-column-dependencia,
+th.mat-column-nombre {
+  width: 25%;
+}
+
+th.mat-column-estado {
+  width: 12.5%;
+}
+
+.botonesTabla {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-evenly;
+}

@@ -1,0 +1,96 @@
+<mat-card class="card-oas">
+  <mat-card-header>
+    <mat-card-title>Listado de planes pendientes en Seguimiento</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="mat-elevation-z8">
+      <table mat-table [dataSource]="informacionTabla">
+        <ng-container matColumnDef="dependencia">
+          <th mat-header-cell *matHeaderCellDef>
+            <div>Unidad Académica y/o Administrativa</div>
+            <mat-select placeholder="Unidad" (selectionChange)="ajustarData($event)">
+              <mat-option>--</mat-option>
+              <mat-option *ngFor="let unidad of auxUnidades" [value]="unidad.Nombre">
+                {{unidad.Nombre}}
+              </mat-option>
+            </mat-select>
+          </th>
+          <td mat-cell *matCellDef="let plan">{{ plan["plan_id"]["dependencia_nombre"] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="vigencia">
+          <th mat-header-cell *matHeaderCellDef>
+            <div>Vigencia</div>
+            <input
+              matInput
+              (keyup)="aplicarFiltro($event)"
+              placeholder="Vigencia"
+              type="number"
+              #input
+            />
+          </th>
+          <td mat-cell *matCellDef="let plan">{{ plan["plan_id"]["vigencia_nombre"] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>
+            <div>Plan de acción</div>
+            <input matInput (keyup)="aplicarFiltro($event)" placeholder="Plan" #input />
+          </th>
+          <td mat-cell *matCellDef="let plan">{{ plan["plan_id"]["nombre"] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="trimestre">
+          <th mat-header-cell *matHeaderCellDef>
+            <div>Trimestre</div>
+            <input
+              matInput
+              (keyup)="aplicarFiltro($event)"
+              placeholder="Trimestre"
+              type="number"
+              #input
+            />
+          </th>
+          <td mat-cell *matCellDef="let plan">{{ plan["periodo_seguimiento_id"]["periodo_nombre"] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>
+            <div>Estado</div>
+          </th>
+          <td mat-cell *matCellDef="let plan">{{ plan["estado_seguimiento_id"]["nombre"] }}</td>
+        </ng-container>
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef>
+            Acciones
+          </th>
+          <td mat-cell *matCellDef="let plan">
+            <button mat-icon-button (click)="consultarPlan(plan)">
+              <mat-icon>search</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="seleccionar">
+          <th mat-header-cell *matHeaderCellDef>
+            Seleccionar
+          </th>
+          <td mat-cell *matCellDef="let plan">
+            <!-- Puedes personalizar el botón de selección según tus necesidades -->
+            <button mat-icon-button (click)="seleccionarPlan(plan)">
+              <mat-icon *ngIf="!plan.seleccionado">add_box</mat-icon>
+              <mat-icon *ngIf="plan.seleccionado">done</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columnasMostradas"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnasMostradas"></tr>
+      </table>
+      <mat-paginator
+        [pageSizeOptions]="[5, 10, 25, 100]"
+      ></mat-paginator>
+    </div>
+    <div class="botonesTabla" *ngIf="datosCargados">
+      <button mat-raised-button color="primary" [disabled]="banderaTodosSeleccionados" (click)="seleccionarTodos()">Seleccionar Todos</button>
+      <button mat-raised-button color="primary" [disabled]="planesInteres.length==0" (click)="borrarSeleccion()">Borrar selección</button>
+      <button mat-raised-button color="primary" [disabled]="planesInteres.length<=1" (click)="verificarSeleccion()">Aprobar planes/proyectos</button>
+    </div>
+  </mat-card-content>
+</mat-card>
