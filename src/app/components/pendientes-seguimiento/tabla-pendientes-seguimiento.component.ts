@@ -4,9 +4,10 @@ import { MatTableDataSource } from '@angular/material/table';
 import { RequestManager } from '../../services/requestManager';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
-import { VerificarFormulario } from '../../services/verificarFormulario'
 import { Router } from '@angular/router';
 import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
+import { VerificarFormulario } from '../../services/verificarFormulario'
+import * as singleSpa from 'single-spa'
 
 @Component({
   selector: 'app-tabla-pendientes-seguimiento',
@@ -40,9 +41,9 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
 
   constructor(
     private request: RequestManager,
-    private verificarFormulario: VerificarFormulario,
     private autenticationService: ImplicitAutenticationService,
     private router: Router,
+    private verificarFormulario: VerificarFormulario,
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
@@ -187,8 +188,8 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
   consultarPlan(plan: any) {
     const auxId = plan["plan_id"]["_id"]
     const auxTrimestres = plan["periodo_seguimiento_id"]["periodo_nombre"]
-    // this.verificarFormulario.setEstadoLista(true);
-    // this.router.navigate([`pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres]);
+    this.verificarFormulario.setCookie("estadoLista", 'true');
+    singleSpa.navigateToUrl(`/pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
   }
 
   loadPlanes(): Promise<void> {
