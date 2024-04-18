@@ -2,13 +2,13 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes, provideRouter } from '@angular/router';
 import { APP_BASE_HREF } from '@angular/common';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { TablaPendientesFormulacionComponent } from './components/pendientes-formulacion/tabla-pendientes-formulacion.component';
-import { TablaPendientesSeguimientoComponent } from './components/pendientes-seguimiento/tabla-pendientes-seguimiento.component';
+import { TablaFormulacionComponent } from './components/formulacion/tabla-formulacion.component';
+import { TablaSeguimientoComponent } from './components/seguimiento/tabla-seguimiento.component';
 import { getSingleSpaExtraProviders } from 'single-spa-angular';
 
 const routes: Routes = [
-  { path: 'formulacion', component: TablaPendientesFormulacionComponent },
-  { path: 'seguimiento', component: TablaPendientesSeguimientoComponent }
+  { path: 'formulacion', component: TablaFormulacionComponent },
+  { path: 'seguimiento', component: TablaSeguimientoComponent }
 ];
 
 @NgModule({

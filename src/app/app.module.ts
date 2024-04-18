@@ -4,8 +4,8 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
-import { TablaPendientesFormulacionComponent } from './components/pendientes-formulacion/tabla-pendientes-formulacion.component';
-import { TablaPendientesSeguimientoComponent } from './components/pendientes-seguimiento/tabla-pendientes-seguimiento.component';
+import { TablaFormulacionComponent } from './components/formulacion/tabla-formulacion.component';
+import { TablaSeguimientoComponent } from './components/seguimiento/tabla-seguimiento.component';
 
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,8 +16,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 @NgModule({
   declarations: [
     AppComponent,
-    TablaPendientesFormulacionComponent,
-    TablaPendientesSeguimientoComponent
+    TablaFormulacionComponent,
+    TablaSeguimientoComponent
   ],
   imports: [
     BrowserModule,

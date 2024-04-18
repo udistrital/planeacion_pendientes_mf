@@ -10,11 +10,11 @@ import { VerificarFormulario } from '../../services/verificarFormulario'
 import * as singleSpa from 'single-spa'
 
 @Component({
-  selector: 'app-tabla-pendientes-seguimiento',
-  templateUrl: './tabla-pendientes-seguimiento.component.html',
-  styleUrls: ['./tabla-pendientes-seguimiento.component.scss'],
+  selector: 'app-tabla-seguimiento',
+  templateUrl: './tabla-seguimiento.component.html',
+  styleUrls: ['./tabla-seguimiento.component.scss'],
 })
-export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewInit {
+export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   columnasMostradas: string[] = [
     'dependencia',
     'vigencia',

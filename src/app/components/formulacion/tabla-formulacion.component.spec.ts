@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TablaPendientesComponent } from './tabla-pendientes.component';
+import { TablaFormulacionComponent } from './tabla-formulacion.component';
 
 describe('TablaPendientesComponent', () => {
-  let component: TablaPendientesComponent;
-  let fixture: ComponentFixture<TablaPendientesComponent>;
+  let component: TablaFormulacionComponent;
+  let fixture: ComponentFixture<TablaFormulacionComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [TablaPendientesComponent]
+      declarations: [TablaFormulacionComponent]
     })
       .compileComponents();
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(TablaPendientesComponent);
+    fixture = TestBed.createComponent(TablaFormulacionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -10,11 +10,11 @@ import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_auten
 import * as singleSpa from 'single-spa'
 
 @Component({
-  selector: 'app-tabla-pendientes-formulacion',
-  templateUrl: './tabla-pendientes-formulacion.component.html',
-  styleUrls: ['./tabla-pendientes-formulacion.component.scss'],
+  selector: 'app-tabla-formulacion',
+  templateUrl: './tabla-formulacion.component.html',
+  styleUrls: ['./tabla-formulacion.component.scss'],
 })
-export class TablaPendientesFormulacionComponent implements OnInit, AfterViewInit {
+export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   columnasMostradas: string[] = [
     'dependencia',
     'vigencia',
