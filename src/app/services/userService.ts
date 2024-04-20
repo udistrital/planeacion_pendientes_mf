@@ -22,8 +22,4 @@ export class UserService {
     this.terceroData = { ...this.terceroData, ...data }
     this.terceroSubject.next(this.terceroData);
   }
-
-  getAllTercero() {
-
-  }
 }

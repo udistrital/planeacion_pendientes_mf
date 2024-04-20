@@ -7,7 +7,8 @@ import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
 import { VerificarFormulario } from '../../services/verificarFormulario'
-import * as singleSpa from 'single-spa'
+import { navigateToUrl } from 'single-spa'
+import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 
 @Component({
   selector: 'app-tabla-seguimiento',
@@ -44,6 +45,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     private autenticationService: ImplicitAutenticationService,
     private router: Router,
     private verificarFormulario: VerificarFormulario,
+    private codigosEstados: CodigosEstados,
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
@@ -189,7 +191,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     const auxId = plan["plan_id"]["_id"]
     const auxTrimestres = plan["periodo_seguimiento_id"]["periodo_nombre"]
     this.verificarFormulario.setCookie("estadoLista", 'true');
-    singleSpa.navigateToUrl(`/pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
+    navigateToUrl(`/pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
   }
 
   loadPlanes(): Promise<void> {
@@ -203,52 +205,58 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         },
       })
 
-      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:6153355601c7a2365b2fb2a1,dependencia_id:${this.unidad.Id}`).subscribe(async (data: any) => {
-        if (data) {
-          if (data.Data.length != 0) {
-            data.Data.sort(function(a: any, b: any) { return b.vigencia - a.vigencia; });
-            this.planes = data.Data;
-            resolve()
-          } else {
-            Swal.fire({
-              title: 'No se encontraron planes',
-              icon: 'error',
-              text: `No se encontraron planes para realizar el seguimiento`,
-              showConfirmButton: false,
-              timer: 3500
-            })
-            reject("No se encontraron planes");
+      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${this.codigosEstados.getIdPlanEstadoAvalado()},dependencia_id:${this.unidad.Id}`).subscribe({
+        next: async (data: any) => {
+          if (data) {
+            if (data.Data.length != 0) {
+              data.Data.sort(function(a: any, b: any) { return b.vigencia - a.vigencia; });
+              this.planes = data.Data;
+              resolve()
+            } else {
+              Swal.fire({
+                title: 'No se encontraron planes',
+                icon: 'error',
+                text: `No se encontraron planes para realizar el seguimiento`,
+                showConfirmButton: false,
+                timer: 3500
+              })
+              reject("No se encontraron planes");
+            }
           }
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la operación',
+            text: 'No se encontraron datos registrados',
+            icon: 'warning',
+            showConfirmButton: false,
+            timer: 2500
+          })
+          reject(error);
         }
-      }, (error) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          text: 'No se encontraron datos registrados',
-          icon: 'warning',
-          showConfirmButton: false,
-          timer: 2500
-        })
-        reject(error);
       })
     })
   }
 
   loadPeriodos(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe((data: any) => {
-        if (data) {
-          this.vigencias = data.Data;
+      this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({
+        next: (data: any) => {
+          if (data) {
+            this.vigencias = data.Data;
+          }
+          resolve()
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la operación',
+            text: `No se encontraron datos registrados ${JSON.stringify(error)}`,
+            icon: 'warning',
+            showConfirmButton: false,
+            timer: 2500
+          })
+          reject(error)
         }
-        resolve()
-      }, (error) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          text: `No se encontraron datos registrados ${JSON.stringify(error)}`,
-          icon: 'warning',
-          showConfirmButton: false,
-          timer: 2500
-        })
-        reject(error)
       })
     })
 
@@ -260,8 +268,8 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
 
       const promises = this.planes.map((plan) => {
         return new Promise((innerResolve, innerReject) => {
-          this.request.get(environment.PLANES_MID, `seguimiento/estado_trimestres/` + plan._id).subscribe(
-            (data: any) => {
+          this.request.get(environment.PLANES_MID, `seguimiento/estado_trimestres/` + plan._id).subscribe({
+            next: (data: any) => {
               if (data) {
                 if (data.Data != '' && data.Data != null) {
                   auxPlanesTrimestre.push(data.Data);
@@ -269,7 +277,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
               }
               innerResolve(auxPlanesTrimestre);
             },
-            (error) => {
+            error: (error) => {
               Swal.fire({
                 title: 'Error en la operación',
                 text: `No se encontraron datos registrados ${JSON.stringify(error)}`,
@@ -279,7 +287,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
               });
               innerReject(error);
             }
-          );
+          });
         });
       });
 
@@ -376,32 +384,35 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
 
         const promises = this.planesInteres.map((plan: any) => {
           return new Promise((innerResolve, innerReject) => {
-            this.request.put(environment.PLANES_MID, `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe((data: any) => {
-              if (data) {
-                if (data.Success) {
-                  Swal.fire({
-                    title: 'El reporte se ha enviado satisfactoriamente',
-                    icon: 'success',
-                  })
-                } else {
-                  planesNoVerificables.push(
-                    {
-                      nombre: plan["plan_id"]["nombre"],
-                      periodo: plan["periodo_seguimiento_id"]["periodo_nombre"]
-                    }
-                  )
+            this.request.put(environment.PLANES_MID, `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
+              next: (data: any) => {
+                if (data) {
+                  if (data.Success) {
+                    Swal.fire({
+                      title: 'El reporte se ha enviado satisfactoriamente',
+                      icon: 'success',
+                    })
+                  } else {
+                    planesNoVerificables.push(
+                      {
+                        nombre: plan["plan_id"]["nombre"],
+                        periodo: plan["periodo_seguimiento_id"]["periodo_nombre"]
+                      }
+                    )
+                  }
                 }
+                innerResolve("Verificado");
+              },
+              error: (error) => {
+                Swal.fire({
+                  title: 'Error en la operación',
+                  icon: 'error',
+                  text: `El plan ${plan["plan_id"]["nombre"]} está generando error en su aprobación, intente más tarde o comuniquese con la OATI`,
+                  showConfirmButton: false,
+                  timer: 2500
+                })
+                innerReject(error);
               }
-              innerResolve("Verificado");
-            }, (error) => {
-              Swal.fire({
-                title: 'Error en la operación',
-                icon: 'error',
-                text: `El plan ${plan["plan_id"]["nombre"]} está generando error en su aprobación, intente más tarde o comuniquese con la OATI`,
-                showConfirmButton: false,
-                timer: 2500
-              })
-              innerReject(error);
             });
           })
         })
@@ -444,15 +455,15 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
           timer: 2500
         })
       }
-    }),
-      (error: any) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          icon: 'error',
-          text: `${JSON.stringify(error)}`,
-          showConfirmButton: false,
-          timer: 2500
-        })
-      }
+    },
+    (error: any) => {
+      Swal.fire({
+        title: 'Error en la operación',
+        icon: 'error',
+        text: `${JSON.stringify(error)}`,
+        showConfirmButton: false,
+        timer: 2500
+      })
+    })
   }
 }

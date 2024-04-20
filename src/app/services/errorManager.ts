@@ -19,9 +19,9 @@ export class HttpErrorManager {
       console.error(`Backend returned code ${error.status?error.status:'no code'}, ` +`body was: ${error}`);
     }
     // return an observable with a user-facing error message
-    return throwError({
+    return throwError(() => ({
       status: error.status?error.status:'Error',
       message: 'Something bad happened; please try again later.',
-    });
+    }));
   };
 }
