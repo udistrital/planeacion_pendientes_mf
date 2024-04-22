@@ -9,6 +9,12 @@ import { Router } from '@angular/router';
 import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
+import { DataRequest } from 'src/app/@core/models/dataRequest';
+import { Plan } from 'src/app/@core/models/plan';
+import { Vigencia } from 'src/app/@core/models/vigencia';
+import { PlanFormulacion } from 'src/app/@core/models/planFormulacion';
+import { InfoTercero } from 'src/app/@core/models/tercero';
+import { DependenciaTipoDependencia, Dependencia } from 'src/app/@core/models/dependencia';
 
 @Component({
   selector: 'app-tabla-formulacion',
@@ -25,20 +31,20 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     'acciones',
     'seleccionar'
   ];
-  informacionTabla: MatTableDataSource<any> = new MatTableDataSource<any>();
+  informacionTabla!: MatTableDataSource<PlanFormulacion>;
   inputsFiltros!: NodeListOf<HTMLInputElement>;
-  auxUnidades: any[] = [];
-  unidad: any;
-  vigencias!: any[];
-  planes!: any[];
-  planesInteres: any;
+  auxUnidades: Dependencia[] = [];
+  unidad!: Dependencia;
+  vigencias!: Vigencia[];
+  planes: Plan[] = [];
+  planesInteres: PlanFormulacion[];
   banderaTodosSeleccionados: boolean;
   datosCargados: boolean;
 
   @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
     new MatPaginatorIntl(),
     ChangeDetectorRef.prototype
-  );;
+  );
 
   constructor(
     private request: RequestManager,
@@ -56,30 +62,28 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     await this.codigosEstados.cargarIdentificadores();
 
     this.validarUnidad()
-    const datosPrueba: any[] = [];
-    this.informacionTabla = new MatTableDataSource<any>(datosPrueba);
-    this.informacionTabla.filterPredicate = (plan: any, _) => {
-      let filtrosPasados: number = 0;
-      let valoresAComparar = [
-        plan.dependencia_nombre.toLowerCase(),
-        plan.vigencia.toString(),
-        plan.nombre.toLowerCase(),
-        plan.version.toString(),
-        plan.estado.toLowerCase(),
-      ];
-      this.inputsFiltros.forEach((input, posicion) => {
-        if (valoresAComparar[posicion].includes(input.value.toLowerCase())) {
-          filtrosPasados++;
-        }
-      });
-      return filtrosPasados === valoresAComparar.length;
-    };
+    this.informacionTabla = new MatTableDataSource([] as PlanFormulacion[]);
+    this.informacionTabla.filterPredicate = (data)=> this.filtroTabla(data);
+    this.informacionTabla.paginator = this.paginator;
   }
 
   ngAfterViewInit(): void {
-    this.inputsFiltros = document.querySelectorAll('th.mat-header-cell input');
-    this.informacionTabla.data = [];
-    this.informacionTabla.paginator = this.paginator;
+    this.inputsFiltros = document.querySelectorAll('th input');
+  }
+
+  filtroTabla(plan: PlanFormulacion) {
+    let filtrosPasados: number = 0;
+    let valoresAComparar = [
+      plan.vigencia.toString(),
+      plan.nombre.toLowerCase(),
+      plan.version.toString(),
+    ];
+    this.inputsFiltros.forEach((input, posicion) => {
+      if (valoresAComparar[posicion].includes(input.value.toLowerCase())) {
+        filtrosPasados++;
+      }
+    });
+    return filtrosPasados === valoresAComparar.length;
   }
 
   aplicarFiltro(event: Event): void {
@@ -97,7 +101,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     this.informacionTabla.filter = filtro.trim().toLowerCase();
   }
 
-  async ajustarData(event: any) {
+  async ajustarData({ value }: { value:string }) {
     this.loadPeriodos()
     this.loadPlanes()
     Swal.fire({
@@ -111,29 +115,28 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
 
     await new Promise((resolve, reject) => {
       this.request.get(environment.PLANES_MID, `formulacion/planes_formulacion`).subscribe({
-        next: (data: any) => {
+        next: (data: DataRequest) => {
           if (data.Data != null) {
-            const filterData = data.Data.filter((unid: any) => unid.dependencia_nombre == event.value);
+            const filterData = (data.Data as PlanFormulacion[]).filter((plan) => plan.dependencia_nombre == value);
 
-            const latestVersions = filterData.reduce((acc: any, obj: any) => {
+            const latestVersions = filterData.reduce((acc: Record<string, PlanFormulacion>, plan: PlanFormulacion) => {
               // Si ya existe un objeto con el mismo nombre y su versión es menor, lo reemplazamos
-              const key = `${obj.nombre}-${obj.vigencia}`;
-              if (!acc[key] || obj.version > acc[key].version) {
-                acc[key] = obj;
+              const key = `${plan.nombre}-${plan.vigencia}`;
+              if (!acc[key] || plan.version > acc[key].version) {
+                acc[key] = plan;
               }
               return acc;
-            }, {} as Record<string, any>);
+            }, {});
 
-            // Obtenemos los valores del objeto, que representan la data filtrada
-            const auxData = Object.values(latestVersions).filter((obj: any) => obj.estado === "Revisado")
-            const filteredData: any[] = auxData;
-
-            const estadoSeleccion = filteredData.map(pl => ({
-              ...pl,
-              seleccionado: false
-            }));
-
+            // Obtenemos los valores del objeto, que representan la data filtrada y se les agrega la opción de seleecionado con el valor inicial
+            const estadoSeleccion = Object.values(latestVersions)
+              .filter((plan) => plan.estado === "Revisado")
+              .map(pl => ({
+                ...pl,
+                seleccionado: false
+              })) as PlanFormulacion[];
             this.informacionTabla = new MatTableDataSource(estadoSeleccion);
+            this.informacionTabla.filterPredicate = (data)=> this.filtroTabla(data);
             this.informacionTabla.paginator = this.paginator;
             this.datosCargados = true;
             Swal.close();
@@ -176,19 +179,19 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   validarUnidad() {
-    let document: any = this.autenticationService.getDocument();
-    this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:` + document.__zone_symbol__value)
-      .subscribe((datosInfoTercero: any) => {
-        this.request.get(environment.PLANES_MID, `formulacion/vinculacion_tercero/` + datosInfoTercero[0].TerceroId.Id)
-          .subscribe((vinculacion: any) => {
-            if (vinculacion["Data"] != "") {
-              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:` + vinculacion["Data"]["DependenciaId"]).subscribe((dataUnidad: any) => {
+    this.autenticationService.getDocument().then((document)=>{
+      this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
+      .subscribe((datosInfoTercero: InfoTercero[]) => {
+        this.request.get(environment.PLANES_MID, `formulacion/vinculacion_tercero/${datosInfoTercero[0].TerceroId.Id}`)
+          .subscribe((vinculacion: DataRequest) => {
+            if (vinculacion.Data != "") {
+              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.Data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
                 if (dataUnidad) {
-                  let unidad = dataUnidad[0]["DependenciaId"]
-                  unidad["TipoDependencia"] = dataUnidad[0]["TipoDependenciaId"]["Id"]
+                  let unidad = dataUnidad[0].DependenciaId
+                  unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
                   for (let i = 0; i < dataUnidad.length; i++) {
-                    if (dataUnidad[i]["TipoDependenciaId"]["Id"] === 2) {
-                      unidad["TipoDependencia"] = dataUnidad[i]["TipoDependenciaId"]["Id"]
+                    if (dataUnidad[i].TipoDependenciaId.Id === 2) {
+                      unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
                     }
                   }
                   this.auxUnidades.push(unidad);
@@ -206,9 +209,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
             }
           })
       })
+    });
   }
 
-  consultarPlan(plan: any) {
+  consultarPlan(plan: PlanFormulacion) {
     const vigencia = this.vigencias.filter(vig => vig.Year === plan.vigencia)
     const auxPlan = this.planes.filter(pl => pl.nombre === plan.nombre)
     this.verificarFormulario.setCookie("plan", JSON.stringify(auxPlan[0]))
@@ -218,11 +222,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   loadPlanes() {
-    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true`).subscribe({
-      next: (data: any) => {
+    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true`).subscribe({
+      next: (data: DataRequest) => {
         if (data) {
-          this.planes = data.Data;
-          this.planes = this.filterPlanes(this.planes);
+          this.planes = (data.Data as Plan[]).filter((e) => e.tipo_plan_id != this.codigosEstados.getIdTipoPlanIndicativo());
         }
       },
       error: (error) => {
@@ -237,14 +240,9 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     })
   }
 
-  filterPlanes(data: any) {
-    var dataAux = data.filter((e: any) => e.tipo_plan_id != this.codigosEstados.getIdTipoPlanIndicativo());
-    return dataAux.filter((e: any) => e.activo == true);
-  }
-
   loadPeriodos() {
     this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({ 
-      next: (data: any) => {
+      next: (data: DataRequest) => {
         if (data) {
           this.vigencias = data.Data;
         }
@@ -261,7 +259,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     })
   }
 
-  seleccionarPlan(plan: any) {
+  seleccionarPlan(plan: PlanFormulacion) {
     if (!plan.seleccionado) {
       plan.seleccionado = true;
       this.planesInteres = [...this.planesInteres, plan];
@@ -272,7 +270,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
         plan.seleccionado = false;
         let unidadEliminar = plan.id;
         const index = this.planesInteres.findIndex(
-          (x: { id: any }) => x.id == unidadEliminar
+          (x) => x.id == unidadEliminar
         );
         this.planesInteres.splice(index, 1);
 
@@ -306,8 +304,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
           timer: 2500
         })
       }
-    }),
-      (error: any) => {
+    },(error) => {
         Swal.fire({
           title: 'Error en la operación',
           icon: 'error',
@@ -316,6 +313,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
           timer: 2500
         })
       }
+    )
   }
 
   borrarSeleccion() {
@@ -339,7 +337,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       showCancelButton: true
     }).then((result) => {
       if (result.isConfirmed) {
-        this.planesInteres.forEach((plan: any) => {
+        this.planesInteres.forEach((plan) => {
           const auxPlan = { 
               ...plan,
               _id: plan.id,
@@ -347,7 +345,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
                 this.codigosEstados.getIdEstadoPlanRevisionVerificada(),
             }; 
           this.request.put(environment.PLANES_CRUD, `plan`, auxPlan, auxPlan._id).subscribe({
-              next: (data: any) => {
+              next: (data: DataRequest) => {
               if (data) {
                 Swal.fire({
                   title: 'Revisión Verficada Enviada',
@@ -382,8 +380,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
           timer: 2500
         })
       }
-    },
-    (error: any) => {
+    }, (error) => {
       Swal.fire({
         title: 'Error en la operación',
         icon: 'error',
