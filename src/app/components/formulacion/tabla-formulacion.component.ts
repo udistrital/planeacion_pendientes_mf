@@ -114,8 +114,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     })
 
     await new Promise((resolve, reject) => {
-      this.request.get(environment.PLANES_MID, `formulacion/planes_formulacion`).subscribe({
-        next: (data: DataRequest) => {
+      this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/planes_formulacion`).subscribe({
+        next: (data: any) => {
+          console.log("Ajustar Data:")
+          console.log(data)
           if (data.Data != null) {
             const filterData = (data.Data as PlanFormulacion[]).filter((plan) => plan.dependencia_nombre == value);
 
@@ -182,10 +184,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     this.autenticationService.getDocument().then((document)=>{
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
       .subscribe((datosInfoTercero: InfoTercero[]) => {
-        this.request.get(environment.PLANES_MID, `formulacion/vinculacion_tercero/${datosInfoTercero[0].TerceroId.Id}`)
-          .subscribe((vinculacion: DataRequest) => {
-            if (vinculacion.Data != "") {
-              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.Data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
+        this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
+          .subscribe((vinculacion: any) => {
+            if (vinculacion.data != "") {
+              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data["DependenciaId"]}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
                 if (dataUnidad) {
                   let unidad = dataUnidad[0].DependenciaId
                   unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
@@ -222,10 +224,11 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   loadPlanes() {
-    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true`).subscribe({
+    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true,tipo_plan_id:${this.codigosEstados.getIdTipoPlanProyecto()}`).subscribe({
       next: (data: DataRequest) => {
+        console.log(data)
         if (data) {
-          this.planes = (data.Data as Plan[]).filter((e) => e.tipo_plan_id != this.codigosEstados.getIdTipoPlanIndicativo());
+          this.planes = data.Data as Plan[]
         }
       },
       error: (error) => {

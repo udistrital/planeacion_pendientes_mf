@@ -9,7 +9,7 @@ import { DataRequest } from '../@core/models/dataRequest';
 export class CodigosEstados {
   private idPlanEstadoAvalado: string = '';
   private idEstadoPlanRevisionVerificada: string = '';
-  private idTipoPlanIndicativo: string = '';
+  private idTipoPlanProyecto: string = '';
   private constructor(public request: RequestManager) {}
 
   public async cargarIdentificadores() {
@@ -47,12 +47,12 @@ export class CodigosEstados {
       this.request
         .get(
           environment.PLANES_CRUD,
-          `tipo-plan?query=codigo_abreviacion:PLI_SP,activo=true`
+          `tipo-plan?query=codigo_abreviacion:PR_SP,activo=true`
         )
         .subscribe({
           next: (data: DataRequest) => {
             if (data.Data[0]) {
-              this.idTipoPlanIndicativo = data.Data[0]._id;
+              this.idTipoPlanProyecto = data.Data[0]._id;
               resolve(data.Data[0]._id);
             }
           },
@@ -68,7 +68,7 @@ export class CodigosEstados {
     return this.idEstadoPlanRevisionVerificada;
   }
 
-  public getIdTipoPlanIndicativo() {
-    return this.idTipoPlanIndicativo;
+  public getIdTipoPlanProyecto() {
+    return this.idTipoPlanProyecto;
   }
 }

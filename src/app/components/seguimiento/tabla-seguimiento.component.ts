@@ -170,7 +170,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     this.autenticationService.getDocument().then((document)=>{
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
       .subscribe((datosInfoTercero: InfoTercero[]) => {
-        this.request.get(environment.PLANES_MID, `formulacion/vinculacion_tercero/${datosInfoTercero[0].TerceroId.Id}`)
+        this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
           .subscribe((vinculacion: DataRequest) => {
             if (vinculacion.Data != "") {
               this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.Data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
@@ -283,7 +283,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
 
       const promises = this.planes.map((plan) => {
         return new Promise((innerResolve, innerReject) => {
-          this.request.get(environment.PLANES_MID, `seguimiento/estado_trimestres/${plan._id}`).subscribe({
+          this.request.get(environment.PLANEACION_SEGUIMIENTO_MID,  `estado_trimestres/${plan._id}`).subscribe({
             next: (data: DataRequest) => {
               if (data?.Data != '' && data.Data != null) {
                 auxPlanesTrimestre.push(data.Data as Seguimiento[])
@@ -395,7 +395,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         let planesNoVerificables: { nombre: string; periodo:string }[] = [];
         const promises = this.planesInteres.map((plan) => {
           return new Promise((innerResolve, innerReject) => {
-            this.request.put(environment.PLANES_MID, `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
+            this.request.put(environment.PLANEACION_SEGUIMIENTO_MID,  `verificar_seguimiento`, "{}", plan._id).subscribe({
               next: (data: DataRequest) => {
                 if (data) {
                   if (data.Success) {
