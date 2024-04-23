@@ -1,5 +1,5 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
-import { MatPaginator } from '@angular/material/paginator';
+import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
+import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { RequestManager } from '../../services/requestManager';
 import { environment } from 'src/environments/environment';
@@ -7,14 +7,21 @@ import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
 import { VerificarFormulario } from '../../services/verificarFormulario'
-import * as singleSpa from 'single-spa'
+import { navigateToUrl } from 'single-spa'
+import { CodigosEstados } from 'src/app/services/codigosEstados.service';
+import { InfoTercero } from 'src/app/@core/models/tercero';
+import { DTO, DTO_MID } from 'src/app/@core/models/dataRequest';
+import { Dependencia, DependenciaTipoDependencia } from 'src/app/@core/models/dependencia';
+import { Vigencia } from 'src/app/@core/models/vigencia';
+import { Plan } from 'src/app/@core/models/plan';
+import { Seguimiento } from 'src/app/@core/models/seguimiento';
 
 @Component({
-  selector: 'app-tabla-pendientes-seguimiento',
-  templateUrl: './tabla-pendientes-seguimiento.component.html',
-  styleUrls: ['./tabla-pendientes-seguimiento.component.scss'],
+  selector: 'app-tabla-seguimiento',
+  templateUrl: './tabla-seguimiento.component.html',
+  styleUrls: ['./tabla-seguimiento.component.scss'],
 })
-export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewInit {
+export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   columnasMostradas: string[] = [
     'dependencia',
     'vigencia',
@@ -24,62 +31,63 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
     'acciones',
     'seleccionar'
   ];
-  informacionTabla!: MatTableDataSource<any>;
+  informacionTabla!: MatTableDataSource<Seguimiento>;
   inputsFiltros!: NodeListOf<HTMLInputElement>;
-  auxUnidades: any[] = [];
-  unidad: any;
-  vigencias!: any[];
-  planes!: any[];
-  periodos!: any[];
-  nombresPeriodos!: any[];
-  trimestreEstado!: any[];
-  planesInteres: any;
+  auxUnidades: Dependencia[] = [];
+  unidad!: Dependencia;
+  vigencias!: Vigencia[];
+  planes!: Plan[];
+  trimestreEstado!: Seguimiento[][];
+  planesInteres: Seguimiento[];
   banderaTodosSeleccionados: boolean;
   datosCargados: boolean;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
+    new MatPaginatorIntl(),
+    ChangeDetectorRef.prototype
+  );
 
   constructor(
     private request: RequestManager,
     private autenticationService: ImplicitAutenticationService,
     private router: Router,
     private verificarFormulario: VerificarFormulario,
+    private codigosEstados: CodigosEstados,
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
     this.datosCargados = false;
   }
 
-  ngOnInit(): void {
-    this.validarUnidad()
-    const datosPrueba: any[] = [];
-    this.informacionTabla = new MatTableDataSource<any>(datosPrueba);
-    this.informacionTabla.filterPredicate = (plan: any, _) => {
-      let filtrosPasados: number = 0;
-      let valoresAComparar = [
-        plan.dependencia_nombre.toLowerCase(),
-        plan.vigencia.toString(),
-        plan.nombre.toLowerCase(),
-        plan.version.toString(),
-        plan.estado.toLowerCase(),
-      ];
-      this.inputsFiltros.forEach((input, posicion) => {
-        if (valoresAComparar[posicion].includes(input.value.toLowerCase())) {
-          filtrosPasados++;
-        }
-      });
-      return filtrosPasados === valoresAComparar.length;
-    };
-  }
-
-  ngAfterViewInit(): void {
-    this.inputsFiltros = document.querySelectorAll('th.mat-header-cell input');
+  async ngOnInit() {
+    await this.codigosEstados.cargarIdentificadores();
+    this.informacionTabla = new MatTableDataSource<Seguimiento>([]);
+    this.informacionTabla.filterPredicate = (data, _)=> this.filtroTabla(data)
     this.informacionTabla.paginator = this.paginator;
+    this.validarUnidad()
   }
 
-  aplicarFiltro(event: any): void {
-    let filtro: string = (event.target as HTMLInputElement).value;
+  ngAfterViewInit() {
+    this.inputsFiltros = document.querySelectorAll('th input');
+  }
 
+  filtroTabla(seg: Seguimiento) {
+    let filtrosPasados: number = 0;
+    const valoresAComparar = [
+      seg.plan_id.vigencia_nombre!.toLowerCase(),
+      seg.plan_id.nombre.toLowerCase(),
+      seg.periodo_seguimiento_id.periodo_nombre.toLowerCase()
+    ];
+    this.inputsFiltros.forEach((input, posicion) => {
+      if (valoresAComparar[posicion].includes(input.value.trim().toLowerCase())) {
+        filtrosPasados++;
+      }
+    });
+    return filtrosPasados === valoresAComparar.length;
+  }
+
+  aplicarFiltro(event: Event) {
+    let filtro: string = (event.target as HTMLInputElement).value;
     if (filtro === '') {
       this.inputsFiltros.forEach((input) => {
         if (input.value !== '') {
@@ -92,7 +100,7 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
     this.informacionTabla.filter = filtro.trim().toLowerCase();
   }
 
-  async ajustarData(event: any) {
+  async ajustarData({ value }: { value:string }) {
     Swal.fire({
       title: 'Cargando información',
       timerProgressBar: true,
@@ -102,31 +110,36 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
       },
     })
 
-    if (event.value) {
+    if (value) {
       try {
         await this.loadPeriodos()
         await this.loadPlanes()
         await this.obtenerEstado()
 
         //Lógica filtro
-        const filteredData: any[] = []
-        this.trimestreEstado.map((plan) => {
-          const auxFilter = plan.filter((pl: any) => pl["estado_seguimiento_id"]["codigo_abreviacion"] === "ER")
-          if (auxFilter.length != 0) {
-            for (let i = 0; i < auxFilter.length; i++) {
-              auxFilter[i]["plan_id"]["dependencia_nombre"] = event.value
-              auxFilter[i]["plan_id"]["vigencia_nombre"] = this.vigencias.filter(vig => vig["Id"] == auxFilter[i]["plan_id"]["vigencia"])[0]["Nombre"]
-              filteredData.push(auxFilter[i]);
-            }
-          }
-        })
+        const filteredData: Seguimiento[] = []
+        this.trimestreEstado.forEach((planes) => {
+          planes
+            .filter(
+              (plan) => plan.estado_seguimiento_id.codigo_abreviacion === "ER"
+            )
+            .forEach((seg) => {
+              filteredData.push({
+                ...seg,
+                seleccionado: false,
+                plan_id: {
+                  ...seg.plan_id,
+                  dependencia_nombre: value,
+                  vigencia_nombre: this.vigencias.filter(
+                    (vigencia) => vigencia.Id == Number(seg.plan_id.vigencia)
+                  )[0].Nombre,
+                },
+              } as Seguimiento);
+            });
+        });
 
-        const estadoSeleccion = filteredData.map(pl => ({
-          ...pl,
-          seleccionado: false
-        }));
-
-        this.informacionTabla = new MatTableDataSource(estadoSeleccion);
+        this.informacionTabla = new MatTableDataSource(filteredData);
+        this.informacionTabla.filterPredicate = (data, _) => this.filtroTabla(data)
         this.informacionTabla.paginator = this.paginator;
         this.datosCargados = true;
         Swal.close();
@@ -145,7 +158,8 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
         Swal.close();
       }
     } else {
-      this.informacionTabla = new MatTableDataSource<any>([]);
+      this.informacionTabla = new MatTableDataSource<Seguimiento>([]);
+      this.informacionTabla.filterPredicate = (data, _)=> this.filtroTabla(data);
       this.informacionTabla.paginator = this.paginator;
       this.datosCargados = false;
       Swal.close();
@@ -153,19 +167,19 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
   }
 
   validarUnidad() {
-    let document: any = this.autenticationService.getDocument();
-    this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:` + document.__zone_symbol__value)
-      .subscribe((datosInfoTercero: any) => {
-        this.request.get(environment.PLANES_MID, `formulacion/vinculacion_tercero/` + datosInfoTercero[0].TerceroId.Id)
-          .subscribe((vinculacion: any) => {
-            if (vinculacion["Data"] != "") {
-              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:` + vinculacion["Data"]["DependenciaId"]).subscribe((dataUnidad: any) => {
+    this.autenticationService.getDocument().then((document)=>{
+      this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
+      .subscribe((datosInfoTercero: InfoTercero[]) => {
+        this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
+          .subscribe((vinculacion: DTO_MID) => {
+            if (vinculacion.data != "") {
+              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
                 if (dataUnidad) {
-                  let unidad = dataUnidad[0]["DependenciaId"]
-                  unidad["TipoDependencia"] = dataUnidad[0]["TipoDependenciaId"]["Id"]
+                  let unidad = dataUnidad[0].DependenciaId
+                  unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
                   for (let i = 0; i < dataUnidad.length; i++) {
-                    if (dataUnidad[i]["TipoDependenciaId"]["Id"] === 2) {
-                      unidad["TipoDependencia"] = dataUnidad[i]["TipoDependenciaId"]["Id"]
+                    if (dataUnidad[i].TipoDependenciaId.Id === 2) {
+                      unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
                     }
                   }
                   this.auxUnidades.push(unidad);
@@ -183,13 +197,14 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
             }
           })
       })
+    });
   }
 
-  consultarPlan(plan: any) {
-    const auxId = plan["plan_id"]["_id"]
-    const auxTrimestres = plan["periodo_seguimiento_id"]["periodo_nombre"]
+  consultarPlan(plan: Seguimiento) {
+    const auxId = plan.plan_id._id
+    const auxTrimestres = plan.periodo_seguimiento_id.periodo_nombre
     this.verificarFormulario.setCookie("estadoLista", 'true');
-    singleSpa.navigateToUrl(`/pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
+    navigateToUrl(`/pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
   }
 
   loadPlanes(): Promise<void> {
@@ -202,53 +217,60 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
           Swal.showLoading();
         },
       })
-
-      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:6153355601c7a2365b2fb2a1,dependencia_id:${this.unidad.Id}`).subscribe(async (data: any) => {
-        if (data) {
-          if (data.Data.length != 0) {
-            data.Data.sort(function(a: any, b: any) { return b.vigencia - a.vigencia; });
-            this.planes = data.Data;
-            resolve()
-          } else {
-            Swal.fire({
-              title: 'No se encontraron planes',
-              icon: 'error',
-              text: `No se encontraron planes para realizar el seguimiento`,
-              showConfirmButton: false,
-              timer: 3500
-            })
-            reject("No se encontraron planes");
+      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${this.codigosEstados.getIdPlanEstadoAvalado()},dependencia_id:${this.unidad.Id}`).subscribe({
+        next: async (data: DTO) => {
+          if (data) {
+            if (data.Data.length != 0) {
+              this.planes = (data.Data as Plan[])
+                .sort((a, b) => {
+                   return Number(b.vigencia) - Number(a.vigencia); 
+                  });
+              resolve()
+            } else {
+              Swal.fire({
+                title: 'No se encontraron planes',
+                icon: 'error',
+                text: `No se encontraron planes para realizar el seguimiento`,
+                showConfirmButton: false,
+                timer: 3500
+              })
+              reject("No se encontraron planes");
+            }
           }
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la operación',
+            text: 'No se encontraron datos registrados',
+            icon: 'warning',
+            showConfirmButton: false,
+            timer: 2500
+          })
+          reject(error);
         }
-      }, (error) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          text: 'No se encontraron datos registrados',
-          icon: 'warning',
-          showConfirmButton: false,
-          timer: 2500
-        })
-        reject(error);
       })
     })
   }
 
   loadPeriodos(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe((data: any) => {
-        if (data) {
-          this.vigencias = data.Data;
+      this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({
+        next: (data: DTO) => {
+          if (data) {
+            this.vigencias = data.Data;
+          }
+          resolve()
+        },
+        error: (error) => {
+          Swal.fire({
+            title: 'Error en la operación',
+            text: `No se encontraron datos registrados ${JSON.stringify(error)}`,
+            icon: 'warning',
+            showConfirmButton: false,
+            timer: 2500
+          })
+          reject(error)
         }
-        resolve()
-      }, (error) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          text: `No se encontraron datos registrados ${JSON.stringify(error)}`,
-          icon: 'warning',
-          showConfirmButton: false,
-          timer: 2500
-        })
-        reject(error)
       })
     })
 
@@ -256,20 +278,18 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
 
   obtenerEstado(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const auxPlanesTrimestre: any[] = [];
+      const auxPlanesTrimestre: Seguimiento[][] = [];
 
       const promises = this.planes.map((plan) => {
         return new Promise((innerResolve, innerReject) => {
-          this.request.get(environment.PLANES_MID, `seguimiento/estado_trimestres/` + plan._id).subscribe(
-            (data: any) => {
-              if (data) {
-                if (data.Data != '' && data.Data != null) {
-                  auxPlanesTrimestre.push(data.Data);
-                }
+          this.request.get(environment.PLANEACION_SEGUIMIENTO_MID,  `estado-trimestre/${plan._id}`).subscribe({
+            next: (data: DTO_MID) => {
+              if (data?.data != '' && data.data != null) {
+                auxPlanesTrimestre.push(data.data as Seguimiento[])
               }
               innerResolve(auxPlanesTrimestre);
             },
-            (error) => {
+            error: (error) => {
               Swal.fire({
                 title: 'Error en la operación',
                 text: `No se encontraron datos registrados ${JSON.stringify(error)}`,
@@ -279,7 +299,7 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
               });
               innerReject(error);
             }
-          );
+          });
         });
       });
 
@@ -294,7 +314,7 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
     })
   }
 
-  seleccionarPlan(plan: any) {
+  seleccionarPlan(plan: Seguimiento) {
     if (!plan.seleccionado) {
       plan.seleccionado = true;
       this.planesInteres = [...this.planesInteres, plan];
@@ -303,9 +323,8 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
         this.borrarSeleccion()
       } else {
         plan.seleccionado = false;
-        let unidadEliminar = plan.id;
         const index = this.planesInteres.findIndex(
-          (x: { id: any }) => x.id == unidadEliminar
+          (x) => x._id == plan._id
         );
         this.planesInteres.splice(index, 1);
 
@@ -339,8 +358,7 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
           timer: 2500
         })
       }
-    }),
-      (error: any) => {
+    }, (error) => {
         Swal.fire({
           title: 'Error en la operación',
           icon: 'error',
@@ -349,6 +367,7 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
           timer: 2500
         })
       }
+    )
   }
 
   borrarSeleccion() {
@@ -372,36 +391,37 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
       showCancelButton: true
     }).then((result) => {
       if (result.isConfirmed) {
-        let planesNoVerificables: any[] = [];
-
-        const promises = this.planesInteres.map((plan: any) => {
+        let planesNoVerificables: { nombre: string; periodo:string }[] = [];
+        const promises = this.planesInteres.map((plan) => {
           return new Promise((innerResolve, innerReject) => {
-            this.request.put(environment.PLANES_MID, `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe((data: any) => {
-              if (data) {
-                if (data.Success) {
-                  Swal.fire({
-                    title: 'El reporte se ha enviado satisfactoriamente',
-                    icon: 'success',
-                  })
-                } else {
-                  planesNoVerificables.push(
-                    {
-                      nombre: plan["plan_id"]["nombre"],
-                      periodo: plan["periodo_seguimiento_id"]["periodo_nombre"]
-                    }
-                  )
+            this.request.put(environment.PLANEACION_SEGUIMIENTO_MID,  `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
+              next: (data: DTO) => {
+                if (data) {
+                  if (data.Success) {
+                    Swal.fire({
+                      title: 'El reporte se ha enviado satisfactoriamente',
+                      icon: 'success',
+                    })
+                  } else {
+                    planesNoVerificables.push(
+                      {
+                        nombre: plan.plan_id.nombre,
+                        periodo: plan.periodo_seguimiento_id.periodo_nombre
+                      }
+                    )
+                  }
                 }
+                innerResolve("Verificado");
+              }, error: (error) => {
+                Swal.fire({
+                  title: 'Error en la operación',
+                  icon: 'error',
+                  text: `El plan ${plan["plan_id"]["nombre"]} está generando error en su aprobación, intente más tarde o comuniquese con la OATI`,
+                  showConfirmButton: false,
+                  timer: 2500
+                })
+                innerReject(error);
               }
-              innerResolve("Verificado");
-            }, (error) => {
-              Swal.fire({
-                title: 'Error en la operación',
-                icon: 'error',
-                text: `El plan ${plan["plan_id"]["nombre"]} está generando error en su aprobación, intente más tarde o comuniquese con la OATI`,
-                showConfirmButton: false,
-                timer: 2500
-              })
-              innerReject(error);
             });
           })
         })
@@ -444,15 +464,14 @@ export class TablaPendientesSeguimientoComponent implements OnInit, AfterViewIni
           timer: 2500
         })
       }
-    }),
-      (error: any) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          icon: 'error',
-          text: `${JSON.stringify(error)}`,
-          showConfirmButton: false,
-          timer: 2500
-        })
-      }
+    }, (error) => {
+      Swal.fire({
+        title: 'Error en la operación',
+        icon: 'error',
+        text: `${JSON.stringify(error)}`,
+        showConfirmButton: false,
+        timer: 2500
+      })
+    })
   }
 }
