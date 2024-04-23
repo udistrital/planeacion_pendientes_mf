@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { RequestManager } from './requestManager';
 import { environment } from 'src/environments/environment';
-import { DataRequest } from '../@core/models/dataRequest';
+import { DTO } from '../@core/models/dataRequest';
 
 @Injectable({
   providedIn: 'root',
@@ -20,7 +20,7 @@ export class CodigosEstados {
           `estado-plan?query=codigo_abreviacion:A_SP,activo=true`
         )
         .subscribe({
-          next: (data: DataRequest) => {
+          next: (data: DTO) => {
             if (data.Data[0]) {
               this.idPlanEstadoAvalado = data.Data[0]._id;
               resolve(data.Data[0]._id);
@@ -35,7 +35,7 @@ export class CodigosEstados {
           `estado-plan?query=codigo_abreviacion:RV_SP,activo=true`
         )
         .subscribe({
-          next: (data: DataRequest) => {
+          next: (data: DTO) => {
             if (data.Data[0]) {
               this.idEstadoPlanRevisionVerificada = data.Data[0]._id;
               resolve(data.Data[0]._id);
@@ -50,7 +50,7 @@ export class CodigosEstados {
           `tipo-plan?query=codigo_abreviacion:PR_SP,activo=true`
         )
         .subscribe({
-          next: (data: DataRequest) => {
+          next: (data: DTO) => {
             if (data.Data[0]) {
               this.idTipoPlanProyecto = data.Data[0]._id;
               resolve(data.Data[0]._id);

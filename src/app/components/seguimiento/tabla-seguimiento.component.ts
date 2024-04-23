@@ -10,7 +10,7 @@ import { VerificarFormulario } from '../../services/verificarFormulario'
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { InfoTercero } from 'src/app/@core/models/tercero';
-import { DataRequest } from 'src/app/@core/models/dataRequest';
+import { DTO, DTO_MID } from 'src/app/@core/models/dataRequest';
 import { Dependencia, DependenciaTipoDependencia } from 'src/app/@core/models/dependencia';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { Plan } from 'src/app/@core/models/plan';
@@ -171,9 +171,9 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
       .subscribe((datosInfoTercero: InfoTercero[]) => {
         this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
-          .subscribe((vinculacion: DataRequest) => {
-            if (vinculacion.Data != "") {
-              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.Data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
+          .subscribe((vinculacion: DTO_MID) => {
+            if (vinculacion.data != "") {
+              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
                 if (dataUnidad) {
                   let unidad = dataUnidad[0].DependenciaId
                   unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
@@ -217,9 +217,8 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
           Swal.showLoading();
         },
       })
-      console.log(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${this.codigosEstados.getIdPlanEstadoAvalado()},dependencia_id:${this.unidad.Id}`)
       this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${this.codigosEstados.getIdPlanEstadoAvalado()},dependencia_id:${this.unidad.Id}`).subscribe({
-        next: async (data: DataRequest) => {
+        next: async (data: DTO) => {
           if (data) {
             if (data.Data.length != 0) {
               this.planes = (data.Data as Plan[])
@@ -256,7 +255,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   loadPeriodos(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({
-        next: (data: DataRequest) => {
+        next: (data: DTO) => {
           if (data) {
             this.vigencias = data.Data;
           }
@@ -284,9 +283,9 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
       const promises = this.planes.map((plan) => {
         return new Promise((innerResolve, innerReject) => {
           this.request.get(environment.PLANEACION_SEGUIMIENTO_MID,  `estado-trimestre/${plan._id}`).subscribe({
-            next: (data: DataRequest) => {
-              if (data?.Data != '' && data.Data != null) {
-                auxPlanesTrimestre.push(data.Data as Seguimiento[])
+            next: (data: DTO_MID) => {
+              if (data?.data != '' && data.data != null) {
+                auxPlanesTrimestre.push(data.data as Seguimiento[])
               }
               innerResolve(auxPlanesTrimestre);
             },
@@ -396,7 +395,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         const promises = this.planesInteres.map((plan) => {
           return new Promise((innerResolve, innerReject) => {
             this.request.put(environment.PLANEACION_SEGUIMIENTO_MID,  `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
-              next: (data: DataRequest) => {
+              next: (data: DTO) => {
                 if (data) {
                   if (data.Success) {
                     Swal.fire({

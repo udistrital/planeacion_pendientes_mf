@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
 import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
-import { DataRequest } from 'src/app/@core/models/dataRequest';
+import { DTO, DTO_MID } from 'src/app/@core/models/dataRequest';
 import { Plan } from 'src/app/@core/models/plan';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { PlanFormulacion } from 'src/app/@core/models/planFormulacion';
@@ -115,20 +115,19 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
 
     await new Promise((resolve, reject) => {
       this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/planes_formulacion`).subscribe({
-        next: (data: any) => {
-          console.log("Ajustar Data:")
-          console.log(data)
-          if (data.Data != null) {
-            const filterData = (data.Data as PlanFormulacion[]).filter((plan) => plan.dependencia_nombre == value);
+        next: (data: DTO_MID) => {
 
-            const latestVersions = filterData.reduce((acc: Record<string, PlanFormulacion>, plan: PlanFormulacion) => {
-              // Si ya existe un objeto con el mismo nombre y su versión es menor, lo reemplazamos
-              const key = `${plan.nombre}-${plan.vigencia}`;
-              if (!acc[key] || plan.version > acc[key].version) {
-                acc[key] = plan;
-              }
-              return acc;
-            }, {});
+          if (data.data != null) {
+            const latestVersions = (data.data as PlanFormulacion[])
+              .filter((plan) => plan.dependencia_nombre == value)
+              .reduce((acc: Record<string, PlanFormulacion>, plan: PlanFormulacion) => {
+                // Si ya existe un objeto con el mismo nombre y su versión es menor, lo reemplazamos
+                const key = `${plan.nombre}-${plan.vigencia}`;
+                if (!acc[key] || plan.version > acc[key].version) {
+                  acc[key] = plan;
+                }
+                return acc;
+              },{});
 
             // Obtenemos los valores del objeto, que representan la data filtrada y se les agrega la opción de seleecionado con el valor inicial
             const estadoSeleccion = Object.values(latestVersions)
@@ -137,6 +136,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
                 ...pl,
                 seleccionado: false
               })) as PlanFormulacion[];
+
             this.informacionTabla = new MatTableDataSource(estadoSeleccion);
             this.informacionTabla.filterPredicate = (data)=> this.filtroTabla(data);
             this.informacionTabla.paginator = this.paginator;
@@ -153,7 +153,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
               })
             }
             resolve(true);
-          } else if (data.Data == null) {
+          } else if (data.data == null) {
             Swal.close();
             Swal.fire({
               title: 'Atención en la operación',
@@ -185,7 +185,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
       .subscribe((datosInfoTercero: InfoTercero[]) => {
         this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
-          .subscribe((vinculacion: any) => {
+          .subscribe((vinculacion: DTO_MID) => {
             if (vinculacion.data != "") {
               this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data["DependenciaId"]}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
                 if (dataUnidad) {
@@ -225,8 +225,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
 
   loadPlanes() {
     this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true,tipo_plan_id:${this.codigosEstados.getIdTipoPlanProyecto()}`).subscribe({
-      next: (data: DataRequest) => {
-        console.log(data)
+      next: (data: DTO) => {
         if (data) {
           this.planes = data.Data as Plan[]
         }
@@ -245,7 +244,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
 
   loadPeriodos() {
     this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({ 
-      next: (data: DataRequest) => {
+      next: (data: DTO) => {
         if (data) {
           this.vigencias = data.Data;
         }
@@ -348,7 +347,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
                 this.codigosEstados.getIdEstadoPlanRevisionVerificada(),
             }; 
           this.request.put(environment.PLANES_CRUD, `plan`, auxPlan, auxPlan._id).subscribe({
-              next: (data: DataRequest) => {
+              next: (data: DTO) => {
               if (data) {
                 Swal.fire({
                   title: 'Revisión Verficada Enviada',
