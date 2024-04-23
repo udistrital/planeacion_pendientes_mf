@@ -283,7 +283,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
 
       const promises = this.planes.map((plan) => {
         return new Promise((innerResolve, innerReject) => {
-          this.request.get(environment.PLANEACION_SEGUIMIENTO_MID,  `estado_trimestres/${plan._id}`).subscribe({
+          this.request.get(environment.PLANEACION_SEGUIMIENTO_MID,  `estado-trimestre/${plan._id}`).subscribe({
             next: (data: DataRequest) => {
               if (data?.Data != '' && data.Data != null) {
                 auxPlanesTrimestre.push(data.Data as Seguimiento[])
@@ -395,7 +395,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         let planesNoVerificables: { nombre: string; periodo:string }[] = [];
         const promises = this.planesInteres.map((plan) => {
           return new Promise((innerResolve, innerReject) => {
-            this.request.put(environment.PLANEACION_SEGUIMIENTO_MID,  `verificar_seguimiento`, "{}", plan._id).subscribe({
+            this.request.put(environment.PLANEACION_SEGUIMIENTO_MID,  `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
               next: (data: DataRequest) => {
                 if (data) {
                   if (data.Success) {
