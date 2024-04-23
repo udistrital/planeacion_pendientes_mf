@@ -8,8 +8,8 @@ export const environment = {
     appMenu: 'PLANEACION',
     SINTOMAS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/sintomas_crud/v1/',
     //SERVICES PLANEACIÓN
-    PLANEACION_FORMULACION_MID: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8551/v1',
-    PLANEACION_SEGUIMIENTO_MID: 'http://pruebasapi3.intranetoas.udistrital.edu.co:8558/v1',
+    PLANEACION_FORMULACION_MID: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8551/v1/',
+    PLANEACION_SEGUIMIENTO_MID: 'http://pruebasapi3.intranetoas.udistrital.edu.co:8558/v1/',
     PLANES_MID_PROXY: 'https://autenticacion.portaloas.udistrital.edu.co/go_api/planeacion_mid/v1/',
     PLANES_CRUD: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/planes_crud/',
     OIKOS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/oikos_crud_api/v2/',
