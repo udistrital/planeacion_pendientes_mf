@@ -1,3 +1,5 @@
+@use '../styles/global';
+
 table {
   width: 100%;
 }
@@ -6,11 +8,11 @@ th {
   color: white;
 }
 
-th.mat-header-cell div {
+th.mat-mdc-header-cell div {
   margin-bottom: 10px;
 }
 
-tr td.mat-cell:last-child {
+tr td.mat-mdc-cell:last-child {
   text-align: right;
   justify-content: flex-end;
 }
@@ -35,12 +37,12 @@ input[type="number"] {
   appearance: textfield;
 }
 
-td.mat-cell,
-th.mat-header-cell {
+td.mat-mdc-cell,
+th.mat-mdc-header-cell {
   padding: 16px 10px;
 }
 
-tr th.mat-header-cell:last-child {
+tr th.mat-mdc-header-cell:last-child {
   padding-right: 24px;
   text-align: right;
 }
