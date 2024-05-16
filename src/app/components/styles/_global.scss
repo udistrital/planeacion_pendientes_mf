@@ -1,0 +1,66 @@
+*:not(mat-icon) {
+  font-family: Roboto, "Helvetica Neue", sans-serif !important;
+}
+
+b {
+  color: var(--primary);
+}
+
+.mat-mdc-card {
+  background-color: #f1f5f8;
+}
+
+.mat-mdc-card-title {
+  color: var(--primary);
+  margin-left: 12px;
+}
+
+.mat-mdc-form-field-hint {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.mat-mdc-form-field-appearance-fill {
+  border-radius: 4px 4px 0 0;
+  padding: 0.75em 0.75em 0 0.75em;
+}
+
+table {
+  margin-top: 10px;
+  width: 100%;
+}
+
+th {
+  background-color: var(--primary);
+  color: white;
+  text-align: center;
+}
+
+.mat-mdc-header-cell {
+  background: var(--primary);
+}
+
+td {
+  text-align: center;
+}
+
+.mat-mdc-row:nth-child(even) {
+  background-color: #f1f5f8;
+  border-color: #f1f5f8;
+}
+
+.mat-mdc-row:nth-child(odd) {
+  background-color: white;
+}
+
+.mat-button-toggle-checked {
+  background-color: var(--primary) !important;
+  color: white !important;
+}
+
+mat-hint {
+  font-size: 11px;
+}
+
+div>mat-label {
+  color: var(--primary);
+}
