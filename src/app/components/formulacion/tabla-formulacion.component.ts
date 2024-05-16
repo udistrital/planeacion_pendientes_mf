@@ -40,6 +40,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   planesInteres: PlanFormulacion[];
   banderaTodosSeleccionados: boolean;
   datosCargados: boolean;
+  rol!: string;
 
   @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
     new MatPaginatorIntl(),
@@ -56,12 +57,39 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
     this.datosCargados = false;
+    let roles: any = this.autenticationService.getRole();
+    if (
+      roles.__zone_symbol__value.find(
+        (x: string) => x == 'JEFE_DEPENDENCIA' || x == 'ASISTENTE_DEPENDENCIA'
+      )
+    ) {
+      this.rol = 'JEFE_DEPENDENCIA';
+    } else if (
+      roles.__zone_symbol__value.find((x: string) => x == 'PLANEACION')
+    ) {
+      this.rol = 'PLANEACION';
+    } else if (
+      roles.__zone_symbol__value.find(
+        (x: string) => x == 'JEFE_UNIDAD_PLANEACION'
+      )
+    ) {
+      this.rol = 'JEFE_UNIDAD_PLANEACION';
+    }
   }
 
   async ngOnInit() {
     await this.codigosEstados.cargarIdentificadores();
 
-    this.validarUnidad()
+    if (
+      this.rol == 'JEFE_DEPENDENCIA' ||
+      this.rol == 'ASISTENTE_DEPENDENCIA' ||
+      this.rol == 'JEFE_UNIDAD_PLANEACION'
+    ) {
+      this.validarUnidad();
+    } else {
+      await this.loadUnidades();
+    }
+
     this.informacionTabla = new MatTableDataSource([] as PlanFormulacion[]);
     this.informacionTabla.filterPredicate = (data) => this.filtroTabla(data);
     this.informacionTabla.paginator = this.paginator;
@@ -108,6 +136,8 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       title: 'Cargando información',
       timerProgressBar: true,
       showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
       willOpen: () => {
         Swal.showLoading();
       },
@@ -191,6 +221,8 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       title: 'Cargando Unidades',
       timerProgressBar: true,
       showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
       willOpen: () => {
         Swal.showLoading();
       },
@@ -293,6 +325,44 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
         })
       }
     })
+  }
+
+  async loadUnidades() {
+    Swal.fire({
+      title: 'Cargando unidades',
+      timerProgressBar: true,
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
+      willOpen: () => {
+        Swal.showLoading();
+      },
+    });
+    await new Promise((resolve, reject) => {
+      this.request
+        .get(environment.PLANEACION_FORMULACION_MID, `formulacion/unidades`)
+        .subscribe({
+          next: (data: any) => {
+            if (data) {
+              this.auxUnidades = data.Data;
+              Swal.close();
+              resolve(this.auxUnidades);
+            }
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la operación',
+              text: `No se encontraron datos registrados ${JSON.stringify(
+                error
+              )}`,
+              icon: 'warning',
+              showConfirmButton: false,
+              timer: 2500,
+            });
+            reject(error);
+          },
+        });
+    });
   }
 
   seleccionarPlan(plan: PlanFormulacion) {

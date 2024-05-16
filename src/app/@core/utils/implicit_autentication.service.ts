@@ -14,6 +14,23 @@ export class ImplicitAutenticationService {
     this.userSubject.next(JSON.parse(atob(user)));
   }
 
+  public getRole() {
+    const rolePromise = new Promise((resolve) => {
+      this.user$.subscribe((data: any) => {
+        // console.log('user data:', data);
+        const { user, userService } = data;
+        const roleUser = typeof user.role !== 'undefined' ? user.role : [];
+        const roleUserService =
+          typeof userService.role !== 'undefined' ? userService.role : [];
+        const roles = roleUser
+          .concat(roleUserService)
+          .filter((data: any) => data.indexOf('/') === -1);
+        resolve(roles);
+      });
+    });
+    return rolePromise;
+  }
+
   public getDocument() {
     return new Promise<string>((resolve) => {
       this.user$.subscribe(({ userService }) => {
