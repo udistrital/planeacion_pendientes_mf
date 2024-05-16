@@ -10,7 +10,7 @@ import { VerificarFormulario } from '../../services/verificarFormulario'
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { InfoTercero } from 'src/app/@core/models/tercero';
-import { DTO, DTO_MID } from 'src/app/@core/models/dataRequest';
+import { DTO } from 'src/app/@core/models/dataRequest';
 import { Dependencia, DependenciaTipoDependencia } from 'src/app/@core/models/dependencia';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { Plan } from 'src/app/@core/models/plan';
@@ -111,6 +111,12 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     })
 
     if (value) {
+      this.auxUnidades.map((und: any) => {
+        if (und.Nombre === value) {
+          this.unidad = und;
+        }
+      });
+
       try {
         await this.loadPeriodos()
         await this.loadPlanes()
@@ -167,25 +173,53 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   }
 
   validarUnidad() {
+    Swal.fire({
+      title: 'Cargando Unidades',
+      timerProgressBar: true,
+      showConfirmButton: false,
+      willOpen: () => {
+        Swal.showLoading();
+      },
+    })
     this.autenticationService.getDocument().then((document) => {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
         .subscribe((datosInfoTercero: InfoTercero[]) => {
           this.request.get(environment.PLANEACION_FORMULACION_MID, `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
-            .subscribe((vinculacion: DTO_MID) => {
-              if (vinculacion.data != "") {
-                this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
-                  if (dataUnidad) {
-                    let unidad = dataUnidad[0].DependenciaId
-                    unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
-                    for (let i = 0; i < dataUnidad.length; i++) {
-                      if (dataUnidad[i].TipoDependenciaId.Id === 2) {
-                        unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
+            .subscribe((vinculacion: DTO) => {
+              if (vinculacion.Data != "") {
+                const promises = vinculacion.Data.map((und: any) => {
+                  return new Promise((innerResolve, innerReject) => {
+                    this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${und["DependenciaId"]}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
+                      if (dataUnidad) {
+                        let unidad = dataUnidad[0].DependenciaId
+                        unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
+                        for (let i = 0; i < dataUnidad.length; i++) {
+                          if (dataUnidad[i].TipoDependenciaId.Id === 2) {
+                            unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
+                          }
+                        }
+                        this.auxUnidades.push(unidad);
+                        innerResolve(this.auxUnidades);
                       }
-                    }
-                    this.auxUnidades.push(unidad);
-                    this.unidad = unidad
-                  }
-                })
+                      innerReject(`Error: No fue posible obtener la dependencia ${und["DependenciaId"]}`);
+                    });
+                  });
+                });
+
+                Promise.all(promises)
+                  .then(() => {
+                    Swal.close();
+                  })
+                  .catch((error) => {
+                    Swal.close();
+                    Swal.fire({
+                      title: 'Error en la operación',
+                      text: `No fue posible obtener la unidad o unidades pertenecientes al usuario`,
+                      icon: 'warning',
+                      showConfirmButton: false,
+                      timer: 4000
+                    })
+                  });
               } else {
                 Swal.fire({
                   title: 'Error en la operación',
