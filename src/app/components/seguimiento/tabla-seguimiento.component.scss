@@ -24,7 +24,8 @@ th mat-select {
   font-size: 10px;
   padding: 5px;
   width: calc(100% - 16px);
-
+  border: none;
+  outline: none;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -65,4 +66,11 @@ th.mat-column-estado {
   margin-top: 20px;
   display: flex;
   justify-content: space-evenly;
+}
+
+td>button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  margin-left: 10px;
 }
