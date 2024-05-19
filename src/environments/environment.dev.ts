@@ -19,7 +19,6 @@ export const environment = {
   GESTOR_DOCUMENTAL_MID: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8199/v1/',
   DOCUMENTO_SERVICE: 'http://pruebasapi.intranetoas.udistrital.edu.co:8094/v1/',
   ///
-  ACADEMICA_JBPM_SERVICE: 'http://busservicios.intranetoas.udistrital.edu.co:8282/wso2eiserver/services/academica_pruebas/',
   //PARAMETROS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/parametros/v1/',
   CONFIGURACION_SERVICE: 'http://pruebasapi.intranetoas.udistrital.edu.co:8086/v1/',
   CONF_MENU_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/configuracion_crud_api/v1/menu_opcion_padre/ArbolMenus/',
