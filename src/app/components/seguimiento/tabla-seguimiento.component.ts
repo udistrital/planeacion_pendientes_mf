@@ -10,7 +10,7 @@ import { VerificarFormulario } from '../../services/verificarFormulario'
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { InfoTercero } from 'src/app/@core/models/tercero';
-import { DTO, DTO_MID } from 'src/app/@core/models/dataRequest';
+import { DTO } from 'src/app/@core/models/dataRequest';
 import { Dependencia, DependenciaTipoDependencia } from 'src/app/@core/models/dependencia';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { Plan } from 'src/app/@core/models/plan';
@@ -41,6 +41,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   planesInteres: Seguimiento[];
   banderaTodosSeleccionados: boolean;
   datosCargados: boolean;
+  rol!: string;
 
   @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
     new MatPaginatorIntl(),
@@ -57,14 +58,40 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
     this.datosCargados = false;
+    let roles: any = this.autenticationService.getRole();
+    if (
+      roles.__zone_symbol__value.find(
+        (x: string) => x == 'JEFE_DEPENDENCIA' || x == 'ASISTENTE_DEPENDENCIA'
+      )
+    ) {
+      this.rol = 'JEFE_DEPENDENCIA';
+    } else if (
+      roles.__zone_symbol__value.find((x: string) => x == 'PLANEACION')
+    ) {
+      this.rol = 'PLANEACION';
+    } else if (
+      roles.__zone_symbol__value.find(
+        (x: string) => x == 'JEFE_UNIDAD_PLANEACION'
+      )
+    ) {
+      this.rol = 'JEFE_UNIDAD_PLANEACION';
+    }
   }
 
   async ngOnInit() {
     await this.codigosEstados.cargarIdentificadores();
     this.informacionTabla = new MatTableDataSource<Seguimiento>([]);
-    this.informacionTabla.filterPredicate = (data, _)=> this.filtroTabla(data)
+    this.informacionTabla.filterPredicate = (data, _) => this.filtroTabla(data)
     this.informacionTabla.paginator = this.paginator;
-    this.validarUnidad()
+    if (
+      this.rol == 'JEFE_DEPENDENCIA' ||
+      this.rol == 'ASISTENTE_DEPENDENCIA' ||
+      this.rol == 'JEFE_UNIDAD_PLANEACION'
+    ) {
+      this.validarUnidad();
+    } else {
+      await this.loadUnidades();
+    }
   }
 
   ngAfterViewInit() {
@@ -100,17 +127,25 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     this.informacionTabla.filter = filtro.trim().toLowerCase();
   }
 
-  async ajustarData({ value }: { value:string }) {
+  async ajustarData({ value }: { value: string }) {
     Swal.fire({
       title: 'Cargando información',
       timerProgressBar: true,
       showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
       willOpen: () => {
         Swal.showLoading();
       },
     })
 
     if (value) {
+      this.auxUnidades.map((und: any) => {
+        if (und.Nombre === value) {
+          this.unidad = und;
+        }
+      });
+
       try {
         await this.loadPeriodos()
         await this.loadPlanes()
@@ -159,7 +194,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
       }
     } else {
       this.informacionTabla = new MatTableDataSource<Seguimiento>([]);
-      this.informacionTabla.filterPredicate = (data, _)=> this.filtroTabla(data);
+      this.informacionTabla.filterPredicate = (data, _) => this.filtroTabla(data);
       this.informacionTabla.paginator = this.paginator;
       this.datosCargados = false;
       Swal.close();
@@ -167,36 +202,66 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   }
 
   validarUnidad() {
-    this.autenticationService.getDocument().then((document)=>{
+    Swal.fire({
+      title: 'Cargando Unidades',
+      timerProgressBar: true,
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
+      willOpen: () => {
+        Swal.showLoading();
+      },
+    })
+    this.autenticationService.getDocument().then((document) => {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
-      .subscribe((datosInfoTercero: InfoTercero[]) => {
-        this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
-          .subscribe((vinculacion: DTO_MID) => {
-            if (vinculacion.data != "") {
-              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data.DependenciaId}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
-                if (dataUnidad) {
-                  let unidad = dataUnidad[0].DependenciaId
-                  unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
-                  for (let i = 0; i < dataUnidad.length; i++) {
-                    if (dataUnidad[i].TipoDependenciaId.Id === 2) {
-                      unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
-                    }
-                  }
-                  this.auxUnidades.push(unidad);
-                  this.unidad = unidad
-                }
-              })
-            } else {
-              Swal.fire({
-                title: 'Error en la operación',
-                text: `No cuenta con los permisos requeridos para acceder a este módulo`,
-                icon: 'warning',
-                showConfirmButton: false,
-                timer: 4000
-              })
-            }
-          })
-      })
+        .subscribe((datosInfoTercero: InfoTercero[]) => {
+          this.request.get(environment.PLANEACION_FORMULACION_MID, `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
+            .subscribe((vinculacion: DTO) => {
+              if (vinculacion.Data != "") {
+                const promises = vinculacion.Data.map((und: any) => {
+                  return new Promise((innerResolve, innerReject) => {
+                    this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${und["DependenciaId"]}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
+                      if (dataUnidad) {
+                        let unidad = dataUnidad[0].DependenciaId
+                        unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
+                        for (let i = 0; i < dataUnidad.length; i++) {
+                          if (dataUnidad[i].TipoDependenciaId.Id === 2) {
+                            unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
+                          }
+                        }
+                        this.auxUnidades.push(unidad);
+                        innerResolve(this.auxUnidades);
+                      }
+                      innerReject(`Error: No fue posible obtener la dependencia ${und["DependenciaId"]}`);
+                    });
+                  });
+                });
+
+                Promise.all(promises)
+                  .then(() => {
+                    Swal.close();
+                  })
+                  .catch((error) => {
+                    Swal.close();
+                    Swal.fire({
+                      title: 'Error en la operación',
+                      text: `No fue posible obtener la unidad o unidades pertenecientes al usuario`,
+                      icon: 'warning',
+                      showConfirmButton: false,
+                      timer: 4000
+                    })
+                  });
+              } else {
+                Swal.fire({
+                  title: 'Error en la operación',
+                  text: `No cuenta con los permisos requeridos para acceder a este módulo`,
+                  icon: 'warning',
+                  showConfirmButton: false,
+                  timer: 4000
+                })
+              }
+            })
+        })
     });
   }
 
@@ -204,7 +269,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     const auxId = plan.plan_id._id
     const auxTrimestres = plan.periodo_seguimiento_id.periodo_nombre
     this.verificarFormulario.setCookie("estadoLista", 'true');
-    navigateToUrl(`/pages/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
+    navigateToUrl(`/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
   }
 
   loadPlanes(): Promise<void> {
@@ -223,8 +288,8 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
             if (data.Data.length != 0) {
               this.planes = (data.Data as Plan[])
                 .sort((a, b) => {
-                   return Number(b.vigencia) - Number(a.vigencia); 
-                  });
+                  return Number(b.vigencia) - Number(a.vigencia);
+                });
               resolve()
             } else {
               Swal.fire({
@@ -276,16 +341,54 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
 
   }
 
+  async loadUnidades() {
+    Swal.fire({
+      title: 'Cargando unidades',
+      timerProgressBar: true,
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
+      willOpen: () => {
+        Swal.showLoading();
+      },
+    });
+    await new Promise((resolve, reject) => {
+      this.request
+        .get(environment.PLANEACION_FORMULACION_MID, `formulacion/unidades`)
+        .subscribe({
+          next: (data: any) => {
+            if (data) {
+              this.auxUnidades = data.Data;
+              Swal.close();
+              resolve(this.auxUnidades);
+            }
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la operación',
+              text: `No se encontraron datos registrados ${JSON.stringify(
+                error
+              )}`,
+              icon: 'warning',
+              showConfirmButton: false,
+              timer: 2500,
+            });
+            reject(error);
+          },
+        });
+    });
+  }
+
   obtenerEstado(): Promise<void> {
     return new Promise((resolve, reject) => {
       const auxPlanesTrimestre: Seguimiento[][] = [];
 
       const promises = this.planes.map((plan) => {
         return new Promise((innerResolve, innerReject) => {
-          this.request.get(environment.PLANEACION_SEGUIMIENTO_MID,  `estado-trimestre/${plan._id}`).subscribe({
-            next: (data: DTO_MID) => {
-              if (data?.data != '' && data.data != null) {
-                auxPlanesTrimestre.push(data.data as Seguimiento[])
+          this.request.get(environment.PLANEACION_SEGUIMIENTO_MID, `seguimiento/${plan._id}/estado`).subscribe({
+            next: (data: DTO) => {
+              if (data?.Data != '' && data.Data != null) {
+                auxPlanesTrimestre.push(data.Data as Seguimiento[])
               }
               innerResolve(auxPlanesTrimestre);
             },
@@ -359,14 +462,14 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         })
       }
     }, (error) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          icon: 'error',
-          text: `${JSON.stringify(error)}`,
-          showConfirmButton: false,
-          timer: 2500
-        })
-      }
+      Swal.fire({
+        title: 'Error en la operación',
+        icon: 'error',
+        text: `${JSON.stringify(error)}`,
+        showConfirmButton: false,
+        timer: 2500
+      })
+    }
     )
   }
 
@@ -391,10 +494,10 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
       showCancelButton: true
     }).then((result) => {
       if (result.isConfirmed) {
-        let planesNoVerificables: { nombre: string; periodo:string }[] = [];
+        let planesNoVerificables: { nombre: string; periodo: string }[] = [];
         const promises = this.planesInteres.map((plan) => {
           return new Promise((innerResolve, innerReject) => {
-            this.request.put(environment.PLANEACION_SEGUIMIENTO_MID,  `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
+            this.request.put(environment.PLANEACION_SEGUIMIENTO_MID, `seguimiento/verificar_seguimiento`, "{}", plan._id).subscribe({
               next: (data: DTO) => {
                 if (data) {
                   if (data.Success) {
