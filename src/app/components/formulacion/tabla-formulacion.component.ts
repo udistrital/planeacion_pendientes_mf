@@ -291,8 +291,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   loadPlanes() {
-    //611af8364a34b3b2df3799a0 - http://pruebasapi2.intranetoas.udistrital.edu.co:8523/tipo-plan
-    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true,tipo_plan_id:${this.codigosEstados.getIdTipoPlanProyecto()}`).subscribe({
+    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true`).subscribe({
       next: (data: DTO) => {
         if (data) {
           this.planes = data.Data as Plan[]

@@ -47,7 +47,7 @@ export class CodigosEstados {
       this.request
         .get(
           environment.PLANES_CRUD,
-          `tipo-plan?query=codigo_abreviacion:PL_SP,activo=true`
+          `tipo-plan?query=codigo_abreviacion:PR_SP,activo=true`
         )
         .subscribe({
           next: (data: DTO) => {
