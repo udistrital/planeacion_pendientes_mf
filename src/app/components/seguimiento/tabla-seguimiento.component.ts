@@ -5,8 +5,7 @@ import { RequestManager } from '../../services/requestManager';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
-import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
-import { VerificarFormulario } from '../../services/verificarFormulario'
+import { ImplicitAutenticationService, ServiceCookies } from '@udistrital/planeacion-utilidades-module';
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { InfoTercero } from 'src/app/@core/models/tercero';
@@ -48,17 +47,19 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
     ChangeDetectorRef.prototype
   );
 
+  //Servicios Utilidades Module
+  private autenticationService = new ImplicitAutenticationService();
+  private serviceCookies = new ServiceCookies();
+
   constructor(
     private request: RequestManager,
-    private autenticationService: ImplicitAutenticationService,
     private router: Router,
-    private verificarFormulario: VerificarFormulario,
     private codigosEstados: CodigosEstados,
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
     this.datosCargados = false;
-    let roles: any = this.autenticationService.getRole();
+    let roles: any = this.autenticationService.getRoles();
     if (
       roles.__zone_symbol__value.find(
         (x: string) => x == 'JEFE_DEPENDENCIA' || x == 'ASISTENTE_DEPENDENCIA'
@@ -212,7 +213,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         Swal.showLoading();
       },
     })
-    this.autenticationService.getDocument().then((document) => {
+    this.autenticationService.getDocumento().then((document: any) => {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
         .subscribe((datosInfoTercero: InfoTercero[]) => {
           this.request.get(environment.PLANEACION_FORMULACION_MID, `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
@@ -268,7 +269,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   consultarPlan(plan: Seguimiento) {
     const auxId = plan.plan_id._id
     const auxTrimestres = plan.periodo_seguimiento_id.periodo_nombre
-    this.verificarFormulario.setCookie("estadoLista", 'true');
+    this.serviceCookies.setCookie("estadoLista", 'true');
     navigateToUrl(`/seguimiento/gestion-seguimiento/` + auxId + `/` + auxTrimestres);
   }
 
