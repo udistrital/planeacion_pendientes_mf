@@ -68,12 +68,6 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       roles.__zone_symbol__value.find((x: string) => x == 'PLANEACION')
     ) {
       this.rol = 'PLANEACION';
-    } else if (
-      roles.__zone_symbol__value.find(
-        (x: string) => x == 'JEFE_UNIDAD_PLANEACION'
-      )
-    ) {
-      this.rol = 'JEFE_UNIDAD_PLANEACION';
     }
   }
 
@@ -82,8 +76,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
 
     if (
       this.rol == 'JEFE_DEPENDENCIA' ||
-      this.rol == 'ASISTENTE_DEPENDENCIA' ||
-      this.rol == 'JEFE_UNIDAD_PLANEACION'
+      this.rol == 'ASISTENTE_DEPENDENCIA'
     ) {
       this.validarUnidad();
     } else {
