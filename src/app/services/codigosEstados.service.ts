@@ -10,7 +10,7 @@ export class CodigosEstados {
   private idPlanEstadoAvalado: string = '';
   private idEstadoPlanRevisionVerificada: string = '';
   private idTipoPlanProyecto: string = '';
-  private constructor(public request: RequestManager) {}
+  private constructor(public request: RequestManager) { }
 
   public async cargarIdentificadores() {
     await new Promise((resolve, _) => {

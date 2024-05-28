@@ -4,9 +4,8 @@ import { MatTableDataSource } from '@angular/material/table';
 import { RequestManager } from '../../services/requestManager';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
-import { VerificarFormulario } from '../../services/verificarFormulario'
 import { Router } from '@angular/router';
-import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
+import { ImplicitAutenticationService, ServiceCookies } from '@udistrital/planeacion-utilidades-module';
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { DTO } from 'src/app/@core/models/dataRequest';
@@ -47,17 +46,19 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     ChangeDetectorRef.prototype
   );
 
+  //Servicios Utilidades Module
+  private autenticationService = new ImplicitAutenticationService();
+  private serviceCookies = new ServiceCookies();
+
   constructor(
     private request: RequestManager,
-    private verificarFormulario: VerificarFormulario,
-    private autenticationService: ImplicitAutenticationService,
     private codigosEstados: CodigosEstados,
     private router: Router
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
     this.datosCargados = false;
-    let roles: any = this.autenticationService.getRole();
+    let roles: any = this.autenticationService.getRoles();
     if (
       roles.__zone_symbol__value.find(
         (x: string) => x == 'JEFE_DEPENDENCIA' || x == 'ASISTENTE_DEPENDENCIA'
@@ -227,7 +228,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
         Swal.showLoading();
       },
     })
-    this.autenticationService.getDocument().then((document) => {
+    this.autenticationService.getDocumento().then((document: any) => {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
         .subscribe((datosInfoTercero: InfoTercero[]) => {
           this.request.get(environment.PLANEACION_FORMULACION_MID, `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
@@ -283,14 +284,14 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   consultarPlan(plan: PlanFormulacion) {
     const vigencia = this.vigencias.filter(vig => vig.Year === plan.vigencia)
     const auxPlan = this.planes.filter(pl => pl.nombre === plan.nombre)
-    this.verificarFormulario.setCookie("plan", JSON.stringify(auxPlan[0]))
-    this.verificarFormulario.setCookie("vigencia", JSON.stringify(vigencia[0]))
-    this.verificarFormulario.setCookie("unidad", JSON.stringify(this.unidad))
+    this.serviceCookies.setCookie("plan", JSON.stringify(auxPlan[0]))
+    this.serviceCookies.setCookie("vigencia", JSON.stringify(vigencia[0]))
+    this.serviceCookies.setCookie("unidad", JSON.stringify(this.unidad))
     navigateToUrl(`/formulacion`);
   }
 
   loadPlanes() {
-    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true,tipo_plan_id:${this.codigosEstados.getIdTipoPlanProyecto()}`).subscribe({
+    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true`).subscribe({
       next: (data: DTO) => {
         if (data) {
           this.planes = data.Data as Plan[]
