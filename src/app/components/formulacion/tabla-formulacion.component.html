@@ -90,7 +90,7 @@
     <div class="botonesTabla" *ngIf="datosCargados">
       <button mat-raised-button color="primary" style="color:white;" [disabled]="banderaTodosSeleccionados" (click)="seleccionarTodos()">Seleccionar Todos</button>
       <button mat-raised-button color="primary" style="color:white;" [disabled]="planesInteres.length==0" (click)="borrarSeleccion()">Borrar selección</button>
-      <button mat-raised-button color="primary" style="color:white;" [disabled]="planesInteres.length<=1" (click)="verificarSeleccion()">Aprobar planes/proyectos</button>
+      <button mat-raised-button color="primary" style="color:white;" [disabled]="planesInteres.length<1" (click)="verificarSeleccion()">Aprobar planes/proyectos</button>
     </div>
   </mat-card-content>
 </mat-card>
