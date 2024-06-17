@@ -14,17 +14,17 @@ export const environment = {
   PRUEBA: 'http://localhost:8080/v1/',
   //SERVICES PLANEACIÓN
   // PLANES_CRUD: 'http://localhost:8080/',
-  PLANES_CRUD: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8523/',
+  PLANES_CRUD: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/planes_crud/',
   // PLANEACION_FORMULACION_MID: 'http://localhost:8081/v1/',
-  PLANEACION_FORMULACION_MID: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8551/v1/',
+  PLANEACION_FORMULACION_MID: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/planeacion_formulacion_mid/v1/',
   // PLANEACION_SEGUIMIENTO_MID: 'http://localhost:8082/v1/',
-  PLANEACION_SEGUIMIENTO_MID: 'http://pruebasapi3.intranetoas.udistrital.edu.co:8558/v1/',
+  PLANEACION_SEGUIMIENTO_MID: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/planeacion_seguimiento_mid/v1/',
   PLANES_MID_PROXY: 'https://autenticacion.portaloas.udistrital.edu.co/go_api/planeacion_mid/v1/',
-  OIKOS_SERVICE: 'http://api.intranetoas.udistrital.edu.co:8087/v1/',
-  PARAMETROS_SERVICE: 'http://pruebasapi.intranetoas.udistrital.edu.co:8510/v1/',
-  RESOLUCIONES_DOCENTES_SERVICE: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8529/v1/',
-  GESTOR_DOCUMENTAL_MID: 'http://pruebasapi2.intranetoas.udistrital.edu.co:8199/v1/',
-  DOCUMENTO_SERVICE: 'http://pruebasapi.intranetoas.udistrital.edu.co:8094/v1/',
+  OIKOS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/oikos_crud_api/v2/',
+  PARAMETROS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/parametros/v1/',
+  RESOLUCIONES_DOCENTES_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/resoluciones_docentes_mid/v2/',
+  GESTOR_DOCUMENTAL_MID: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/gestor_documental_mid/v1/',
+  DOCUMENTO_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/documento_crud/v2/',
   //
   //Autenticacion
   //
@@ -39,7 +39,6 @@ export const environment = {
   KRONOS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/plan_cuentas_mongo_crud/v1/',
   PRUEBAS: 'http://pruebasapi.intranetoas.udistrital.edu.co:8121/v1/',
   TERCEROS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/terceros_crud/v1/',
-  ACADEMICA_JBPM_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/academica_jbpm/v1/',
   //PARAMETROS_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/parametros/v1/',
   CONFIGURACION_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/configuracion_crud_api/v1/',
   CONF_MENU_SERVICE: 'https://autenticacion.portaloas.udistrital.edu.co/apioas/configuracion_crud_api/v1/menu_opcion_padre/ArbolMenus/',

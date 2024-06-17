@@ -4,12 +4,11 @@ import { MatTableDataSource } from '@angular/material/table';
 import { RequestManager } from '../../services/requestManager';
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
-import { VerificarFormulario } from '../../services/verificarFormulario'
 import { Router } from '@angular/router';
-import { ImplicitAutenticationService } from 'src/app/@core/utils/implicit_autentication.service';
+import { ImplicitAutenticationService, ServiceCookies } from '@udistrital/planeacion-utilidades-module';
 import { navigateToUrl } from 'single-spa'
 import { CodigosEstados } from 'src/app/services/codigosEstados.service';
-import { DTO, DTO_MID } from 'src/app/@core/models/dataRequest';
+import { DTO } from 'src/app/@core/models/dataRequest';
 import { Plan } from 'src/app/@core/models/plan';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { PlanFormulacion } from 'src/app/@core/models/planFormulacion';
@@ -40,30 +39,60 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   planesInteres: PlanFormulacion[];
   banderaTodosSeleccionados: boolean;
   datosCargados: boolean;
+  rol!: string;
 
   @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
     new MatPaginatorIntl(),
     ChangeDetectorRef.prototype
   );
 
+  //Servicios Utilidades Module
+  private autenticationService = new ImplicitAutenticationService();
+  private serviceCookies = new ServiceCookies();
+
   constructor(
     private request: RequestManager,
-    private verificarFormulario: VerificarFormulario,
-    private autenticationService: ImplicitAutenticationService,
     private codigosEstados: CodigosEstados,
     private router: Router
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
     this.datosCargados = false;
+    let roles: any = this.autenticationService.getRoles();
+    if (
+      roles.__zone_symbol__value.find(
+        (x: string) => x == 'JEFE_DEPENDENCIA' || x == 'ASISTENTE_DEPENDENCIA'
+      )
+    ) {
+      this.rol = 'JEFE_DEPENDENCIA';
+    } else if (
+      roles.__zone_symbol__value.find((x: string) => x == 'PLANEACION')
+    ) {
+      this.rol = 'PLANEACION';
+    } else if (
+      roles.__zone_symbol__value.find(
+        (x: string) => x == 'JEFE_UNIDAD_PLANEACION'
+      )
+    ) {
+      this.rol = 'JEFE_UNIDAD_PLANEACION';
+    }
   }
 
-  async ngOnInit(){
+  async ngOnInit() {
     await this.codigosEstados.cargarIdentificadores();
 
-    this.validarUnidad()
+    if (
+      this.rol == 'JEFE_DEPENDENCIA' ||
+      this.rol == 'ASISTENTE_DEPENDENCIA' ||
+      this.rol == 'JEFE_UNIDAD_PLANEACION'
+    ) {
+      this.validarUnidad();
+    } else {
+      await this.loadUnidades();
+    }
+
     this.informacionTabla = new MatTableDataSource([] as PlanFormulacion[]);
-    this.informacionTabla.filterPredicate = (data)=> this.filtroTabla(data);
+    this.informacionTabla.filterPredicate = (data) => this.filtroTabla(data);
     this.informacionTabla.paginator = this.paginator;
   }
 
@@ -101,24 +130,32 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     this.informacionTabla.filter = filtro.trim().toLowerCase();
   }
 
-  async ajustarData({ value }: { value:string }) {
+  async ajustarData({ value }: { value: string }) {
     this.loadPeriodos()
     this.loadPlanes()
     Swal.fire({
       title: 'Cargando información',
       timerProgressBar: true,
       showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
       willOpen: () => {
         Swal.showLoading();
       },
     })
 
-    await new Promise((resolve, reject) => {
-      this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/planes_formulacion`).subscribe({
-        next: (data: DTO_MID) => {
+    this.auxUnidades.map((und: any) => {
+      if (und.Nombre === value) {
+        this.unidad = und;
+      }
+    });
 
-          if (data.data != null) {
-            const latestVersions = (data.data as PlanFormulacion[])
+    await new Promise((resolve, reject) => {
+      this.request.get(environment.PLANEACION_FORMULACION_MID, `formulacion/planes_formulacion`).subscribe({
+        next: (data: DTO) => {
+
+          if (data.Data != null) {
+            const latestVersions = (data.Data as PlanFormulacion[])
               .filter((plan) => plan.dependencia_nombre == value)
               .reduce((acc: Record<string, PlanFormulacion>, plan: PlanFormulacion) => {
                 // Si ya existe un objeto con el mismo nombre y su versión es menor, lo reemplazamos
@@ -127,7 +164,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
                   acc[key] = plan;
                 }
                 return acc;
-              },{});
+              }, {});
 
             // Obtenemos los valores del objeto, que representan la data filtrada y se les agrega la opción de seleecionado con el valor inicial
             const estadoSeleccion = Object.values(latestVersions)
@@ -138,7 +175,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
               })) as PlanFormulacion[];
 
             this.informacionTabla = new MatTableDataSource(estadoSeleccion);
-            this.informacionTabla.filterPredicate = (data)=> this.filtroTabla(data);
+            this.informacionTabla.filterPredicate = (data) => this.filtroTabla(data);
             this.informacionTabla.paginator = this.paginator;
             this.datosCargados = true;
             Swal.close();
@@ -153,7 +190,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
               })
             }
             resolve(true);
-          } else if (data.data == null) {
+          } else if (data.Data == null) {
             Swal.close();
             Swal.fire({
               title: 'Atención en la operación',
@@ -164,7 +201,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
             })
             reject(false);
           }
-        }, 
+        },
         error: (error) => {
           console.error(error);
           Swal.close();
@@ -181,50 +218,80 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   validarUnidad() {
-    this.autenticationService.getDocument().then((document)=>{
+    Swal.fire({
+      title: 'Cargando Unidades',
+      timerProgressBar: true,
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
+      willOpen: () => {
+        Swal.showLoading();
+      },
+    })
+    this.autenticationService.getDocumento().then((document: any) => {
       this.request.get(environment.TERCEROS_SERVICE, `datos_identificacion/?query=Numero:${document}`)
-      .subscribe((datosInfoTercero: InfoTercero[]) => {
-        this.request.get(environment.PLANEACION_FORMULACION_MID,  `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
-          .subscribe((vinculacion: DTO_MID) => {
-            if (vinculacion.data != "") {
-              this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${vinculacion.data["DependenciaId"]}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
-                if (dataUnidad) {
-                  let unidad = dataUnidad[0].DependenciaId
-                  unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
-                  for (let i = 0; i < dataUnidad.length; i++) {
-                    if (dataUnidad[i].TipoDependenciaId.Id === 2) {
-                      unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
-                    }
-                  }
-                  this.auxUnidades.push(unidad);
-                  this.unidad = unidad
-                }
-              })
-            } else {
-              Swal.fire({
-                title: 'Error en la operación',
-                text: `No cuenta con los permisos requeridos para acceder a este módulo`,
-                icon: 'warning',
-                showConfirmButton: false,
-                timer: 4000
-              })
-            }
-          })
-      })
+        .subscribe((datosInfoTercero: InfoTercero[]) => {
+          this.request.get(environment.PLANEACION_FORMULACION_MID, `formulacion/tercero/${datosInfoTercero[0].TerceroId.Id}`)
+            .subscribe((vinculacion: DTO) => {
+              if (vinculacion.Data != "") {
+                const promises = vinculacion.Data.map((und: any) => {
+                  return new Promise((innerResolve, innerReject) => {
+                    this.request.get(environment.OIKOS_SERVICE, `dependencia_tipo_dependencia?query=DependenciaId:${und["DependenciaId"]}`).subscribe((dataUnidad: DependenciaTipoDependencia[]) => {
+                      if (dataUnidad) {
+                        let unidad = dataUnidad[0].DependenciaId
+                        unidad.TipoDependencia = dataUnidad[0].TipoDependenciaId.Id
+                        for (let i = 0; i < dataUnidad.length; i++) {
+                          if (dataUnidad[i].TipoDependenciaId.Id === 2) {
+                            unidad.TipoDependencia = dataUnidad[i].TipoDependenciaId.Id
+                          }
+                        }
+                        this.auxUnidades.push(unidad);
+                        innerResolve(this.auxUnidades);
+                      }
+                      innerReject(`Error: No fue posible obtener la dependencia ${und["DependenciaId"]}`);
+                    });
+                  });
+                });
+
+                Promise.all(promises)
+                  .then(() => {
+                    Swal.close();
+                  })
+                  .catch((error) => {
+                    Swal.close();
+                    Swal.fire({
+                      title: 'Error en la operación',
+                      text: `No fue posible obtener la unidad o unidades pertenecientes al usuario`,
+                      icon: 'warning',
+                      showConfirmButton: false,
+                      timer: 4000
+                    })
+                  });
+              } else {
+                Swal.fire({
+                  title: 'Error en la operación',
+                  text: `No cuenta con los permisos requeridos para acceder a este módulo`,
+                  icon: 'warning',
+                  showConfirmButton: false,
+                  timer: 4000
+                })
+              }
+            })
+        })
     });
   }
 
   consultarPlan(plan: PlanFormulacion) {
     const vigencia = this.vigencias.filter(vig => vig.Year === plan.vigencia)
     const auxPlan = this.planes.filter(pl => pl.nombre === plan.nombre)
-    this.verificarFormulario.setCookie("plan", JSON.stringify(auxPlan[0]))
-    this.verificarFormulario.setCookie("vigencia", JSON.stringify(vigencia[0]))
-    this.verificarFormulario.setCookie("unidad", JSON.stringify(this.unidad))
+    this.serviceCookies.setCookie("plan", JSON.stringify(auxPlan[0]))
+    this.serviceCookies.setCookie("vigencia", JSON.stringify(vigencia[0]))
+    this.serviceCookies.setCookie("unidad", JSON.stringify(this.unidad))
     navigateToUrl(`/formulacion`);
   }
 
   loadPlanes() {
-    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true,tipo_plan_id:${this.codigosEstados.getIdTipoPlanProyecto()}`).subscribe({
+    this.request.get(environment.PLANES_CRUD, `plan?query=formato:true,activo:true`).subscribe({
       next: (data: DTO) => {
         if (data) {
           this.planes = data.Data as Plan[]
@@ -243,7 +310,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   loadPeriodos() {
-    this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({ 
+    this.request.get(environment.PARAMETROS_SERVICE, `periodo?query=CodigoAbreviacion:VG,activo:true`).subscribe({
       next: (data: DTO) => {
         if (data) {
           this.vigencias = data.Data;
@@ -259,6 +326,44 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
         })
       }
     })
+  }
+
+  async loadUnidades() {
+    Swal.fire({
+      title: 'Cargando unidades',
+      timerProgressBar: true,
+      showConfirmButton: false,
+      allowEscapeKey: false,
+      allowOutsideClick: false,
+      willOpen: () => {
+        Swal.showLoading();
+      },
+    });
+    await new Promise((resolve, reject) => {
+      this.request
+        .get(environment.PLANEACION_FORMULACION_MID, `formulacion/unidades`)
+        .subscribe({
+          next: (data: any) => {
+            if (data) {
+              this.auxUnidades = data.Data;
+              Swal.close();
+              resolve(this.auxUnidades);
+            }
+          },
+          error: (error) => {
+            Swal.fire({
+              title: 'Error en la operación',
+              text: `No se encontraron datos registrados ${JSON.stringify(
+                error
+              )}`,
+              icon: 'warning',
+              showConfirmButton: false,
+              timer: 2500,
+            });
+            reject(error);
+          },
+        });
+    });
   }
 
   seleccionarPlan(plan: PlanFormulacion) {
@@ -306,15 +411,15 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
           timer: 2500
         })
       }
-    },(error) => {
-        Swal.fire({
-          title: 'Error en la operación',
-          icon: 'error',
-          text: `${JSON.stringify(error)}`,
-          showConfirmButton: false,
-          timer: 2500
-        })
-      }
+    }, (error) => {
+      Swal.fire({
+        title: 'Error en la operación',
+        icon: 'error',
+        text: `${JSON.stringify(error)}`,
+        showConfirmButton: false,
+        timer: 2500
+      })
+    }
     )
   }
 
@@ -340,14 +445,14 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     }).then((result) => {
       if (result.isConfirmed) {
         this.planesInteres.forEach((plan) => {
-          const auxPlan = { 
-              ...plan,
-              _id: plan.id,
-              estado_plan_id: 
-                this.codigosEstados.getIdEstadoPlanRevisionVerificada(),
-            }; 
+          const auxPlan = {
+            ...plan,
+            _id: plan.id,
+            estado_plan_id:
+              this.codigosEstados.getIdEstadoPlanRevisionVerificada(),
+          };
           this.request.put(environment.PLANES_CRUD, `plan`, auxPlan, auxPlan._id).subscribe({
-              next: (data: DTO) => {
+            next: (data: DTO) => {
               if (data) {
                 Swal.fire({
                   title: 'Revisión Verficada Enviada',

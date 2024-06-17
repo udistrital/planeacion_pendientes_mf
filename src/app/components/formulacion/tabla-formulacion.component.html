@@ -1,14 +1,14 @@
 <mat-card class="card-oas">
   <mat-card-header>
-    <mat-card-title>Listado de planes pendientes en Formulación</mat-card-title>
+    <mat-card-title style="color: var(--primary); margin-left: 12px;">Listado de planes pendientes en Formulación</mat-card-title>
   </mat-card-header>
   <mat-card-content>
     <div class="mat-elevation-z8">
       <table mat-table [dataSource]="informacionTabla">
         <ng-container matColumnDef="dependencia">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             <div>Unidad Académica y/o Administrativa</div>
-            <mat-select placeholder="Unidad" (selectionChange)="ajustarData($event)">
+            <mat-select placeholder="Unidad" (selectionChange)="ajustarData($event)" hideSingleSelectionIndicator=true>
               <mat-option>--</mat-option>
               <mat-option *ngFor="let unidad of auxUnidades" [value]="unidad.Nombre">
                 {{unidad.Nombre}}
@@ -18,7 +18,7 @@
           <td mat-cell *matCellDef="let plan">{{ plan.dependencia_nombre }}</td>
         </ng-container>
         <ng-container matColumnDef="vigencia">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             <div>Vigencia</div>
             <input
               matInput
@@ -31,14 +31,14 @@
           <td mat-cell *matCellDef="let plan">{{ plan.vigencia }}</td>
         </ng-container>
         <ng-container matColumnDef="nombre">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             <div>Plan de acción</div>
             <input matInput (keyup)="aplicarFiltro($event)" placeholder="Plan" #input />
           </th>
           <td mat-cell *matCellDef="let plan">{{ plan.nombre }}</td>
         </ng-container>
         <ng-container matColumnDef="version">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             <div>Versión</div>
             <input
               matInput
@@ -51,13 +51,13 @@
           <td mat-cell *matCellDef="let plan">{{ plan.version }}</td>
         </ng-container>
         <ng-container matColumnDef="estado">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             <div>Estado</div>
           </th>
           <td mat-cell *matCellDef="let plan">{{ plan.estado }}</td>
         </ng-container>
         <ng-container matColumnDef="acciones">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             Acciones
           </th>
           <td mat-cell *matCellDef="let plan">
@@ -68,7 +68,7 @@
         </ng-container>
 
         <ng-container matColumnDef="seleccionar">
-          <th mat-header-cell *matHeaderCellDef>
+          <th mat-header-cell *matHeaderCellDef style="background: var(--primary);">
             Seleccionar
           </th>
           <td mat-cell *matCellDef="let plan">
@@ -88,9 +88,9 @@
       ></mat-paginator>
     </div>
     <div class="botonesTabla" *ngIf="datosCargados">
-      <button mat-raised-button color="primary" [disabled]="banderaTodosSeleccionados" (click)="seleccionarTodos()">Seleccionar Todos</button>
-      <button mat-raised-button color="primary" [disabled]="planesInteres.length==0" (click)="borrarSeleccion()">Borrar selección</button>
-      <button mat-raised-button color="primary" [disabled]="planesInteres.length<=1" (click)="verificarSeleccion()">Aprobar planes/proyectos</button>
+      <button mat-raised-button color="primary" style="color:white;" [disabled]="banderaTodosSeleccionados" (click)="seleccionarTodos()">Seleccionar Todos</button>
+      <button mat-raised-button color="primary" style="color:white;" [disabled]="planesInteres.length==0" (click)="borrarSeleccion()">Borrar selección</button>
+      <button mat-raised-button color="primary" style="color:white;" [disabled]="planesInteres.length<1" (click)="verificarSeleccion()">Aprobar planes/proyectos</button>
     </div>
   </mat-card-content>
 </mat-card>
