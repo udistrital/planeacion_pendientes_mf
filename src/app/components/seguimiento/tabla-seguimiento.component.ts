@@ -7,13 +7,13 @@ import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { ImplicitAutenticationService, ServiceCookies } from '@udistrital/planeacion-utilidades-module';
 import { navigateToUrl } from 'single-spa'
-import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { InfoTercero } from 'src/app/@core/models/tercero';
 import { DTO } from 'src/app/@core/models/dataRequest';
 import { Dependencia, DependenciaTipoDependencia } from 'src/app/@core/models/dependencia';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { Plan } from 'src/app/@core/models/plan';
 import { Seguimiento } from 'src/app/@core/models/seguimiento';
+import { CodigosService } from '@udistrital/planeacion-utilidades-module';
 
 @Component({
   selector: 'app-tabla-seguimiento',
@@ -51,10 +51,11 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   private autenticationService = new ImplicitAutenticationService();
   private serviceCookies = new ServiceCookies();
 
+  private codigosService = new CodigosService();
+
   constructor(
     private request: RequestManager,
     private router: Router,
-    private codigosEstados: CodigosEstados,
   ) {
     this.planesInteres = [];
     this.banderaTodosSeleccionados = false;
@@ -80,7 +81,6 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   }
 
   async ngOnInit() {
-    await this.codigosEstados.cargarIdentificadores();
     this.informacionTabla = new MatTableDataSource<Seguimiento>([]);
     this.informacionTabla.filterPredicate = (data, _) => this.filtroTabla(data)
     this.informacionTabla.paginator = this.paginator;
@@ -274,7 +274,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   }
 
   loadPlanes(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       Swal.fire({
         title: 'Cargando información',
         timerProgressBar: true,
@@ -283,7 +283,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
           Swal.showLoading();
         },
       })
-      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${this.codigosEstados.getIdPlanEstadoAvalado()},dependencia_id:${this.unidad.Id}`).subscribe({
+      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${await this.codigosService.getId('PLANES_CRUD', 'estado-plan', 'A_SP')},dependencia_id:${this.unidad.Id},dependencia_id:${this.unidad.Id}`).subscribe({
         next: async (data: DTO) => {
           if (data) {
             if (data.Data.length != 0) {
