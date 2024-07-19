@@ -157,7 +157,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         this.trimestreEstado.forEach((planes) => {
           planes
             .filter(
-              (plan) => plan.estado_seguimiento_id.codigo_abreviacion === "ER"
+              (plan) => plan.estado_seguimiento_id.codigo_abreviacion === "RJU"
             )
             .forEach((seg) => {
               filteredData.push({

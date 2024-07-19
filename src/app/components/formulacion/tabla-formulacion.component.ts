@@ -284,9 +284,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   consultarPlan(plan: PlanFormulacion) {
     const vigencia = this.vigencias.filter(vig => vig.Year === plan.vigencia)
     const auxPlan = this.planes.filter(pl => pl.nombre === plan.nombre)
+    const unidad = this.auxUnidades.filter(und => und.Nombre === plan.dependencia_nombre)
     this.serviceCookies.setCookie("plan", JSON.stringify(auxPlan[0]))
     this.serviceCookies.setCookie("vigencia", JSON.stringify(vigencia[0]))
-    this.serviceCookies.setCookie("unidad", JSON.stringify(this.unidad))
+    this.serviceCookies.setCookie("unidad", JSON.stringify(unidad[0]))
     navigateToUrl(`/formulacion`);
   }
 
