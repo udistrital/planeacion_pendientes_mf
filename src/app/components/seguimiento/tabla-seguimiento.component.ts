@@ -279,6 +279,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
         title: 'Cargando información',
         timerProgressBar: true,
         showConfirmButton: false,
+        allowOutsideClick: false,
         willOpen: () => {
           Swal.showLoading();
         },
@@ -444,7 +445,8 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       confirmButtonText: `Sí`,
       cancelButtonText: `No`,
-      showCancelButton: true
+      showCancelButton: true,
+      allowOutsideClick: false,
     }).then((result) => {
       if (result.isConfirmed) {
         this.banderaTodosSeleccionados = true;
@@ -492,7 +494,8 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       confirmButtonText: `Continuar`,
       cancelButtonText: `Cancelar`,
-      showCancelButton: true
+      showCancelButton: true,
+      allowOutsideClick: false,
     }).then((result) => {
       if (result.isConfirmed) {
         let planesNoVerificables: { nombre: string; periodo: string }[] = [];
@@ -542,6 +545,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
                 title: 'Los siguientes planes/proyectos no son verificables (revisar sus respectivas actividades):',
                 icon: 'warning',
                 showConfirmButton: true,
+                allowOutsideClick: false,
                 html: message
               }).then((result) => {
                 this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
@@ -553,6 +557,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
                 title: 'Todos los planes/proyectos fueron verificados satisfactoriamente',
                 icon: 'success',
                 showConfirmButton: true,
+                allowOutsideClick: false,
               }).then((result) => {
                 this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
                   this.router.navigate([actualUrl]);

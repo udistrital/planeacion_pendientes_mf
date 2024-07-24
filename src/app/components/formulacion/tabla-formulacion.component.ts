@@ -53,7 +53,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   private serviceCookies = new ServiceCookies();
 
   private codigosService = new CodigosService();
-  
+
   constructor(
     private request: RequestManager,
     private router: Router
@@ -402,7 +402,8 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       confirmButtonText: `Sí`,
       cancelButtonText: `No`,
-      showCancelButton: true
+      showCancelButton: true,
+      allowOutsideClick: false,
     }).then((result) => {
       if (result.isConfirmed) {
         this.banderaTodosSeleccionados = true;
@@ -450,7 +451,8 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       confirmButtonText: `Sí`,
       cancelButtonText: `No`,
-      showCancelButton: true
+      showCancelButton: true,
+      allowOutsideClick: false,
     }).then((result) => {
       if (result.isConfirmed) {
         this.planesInteres.forEach(async (plan) => {
