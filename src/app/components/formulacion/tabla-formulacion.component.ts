@@ -2,6 +2,7 @@ import { AfterViewInit, ChangeDetectorRef, Component, OnInit, ViewChild } from '
 import { MatPaginator, MatPaginatorIntl } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { RequestManager } from '../../services/requestManager';
+import { Notificaciones } from "../../services/notificaciones";
 import { environment } from 'src/environments/environment';
 import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
@@ -56,6 +57,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   
   constructor(
     private request: RequestManager,
+    private notificacionesService: Notificaciones,
     private router: Router
   ) {
     this.planesInteres = [];
@@ -462,6 +464,14 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
           this.request.put(environment.PLANES_CRUD, `plan`, auxPlan, auxPlan._id).subscribe({
             next: (data: DTO) => {
               if (data) {
+                // NOTIFICACION(FR2)
+                this.notificacionesService.enviarNotificacion({
+                  codigo: "FR2",
+                  id_unidad: plan.dependencia_id,
+                  nombre_unidad: plan.dependencia_nombre, 
+                  nombre_plan: plan.nombre, 
+                  nombre_vigencia: plan.vigencia
+                })
                 Swal.fire({
                   title: 'Revisión Verficada Enviada',
                   icon: 'success',
