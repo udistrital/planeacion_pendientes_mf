@@ -7,13 +7,13 @@ import Swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { ImplicitAutenticationService, ServiceCookies } from '@udistrital/planeacion-utilidades-module';
 import { navigateToUrl } from 'single-spa'
-import { CodigosEstados } from 'src/app/services/codigosEstados.service';
 import { DTO } from 'src/app/@core/models/dataRequest';
 import { Plan } from 'src/app/@core/models/plan';
 import { Vigencia } from 'src/app/@core/models/vigencia';
 import { PlanFormulacion } from 'src/app/@core/models/planFormulacion';
 import { InfoTercero } from 'src/app/@core/models/tercero';
 import { DependenciaTipoDependencia, Dependencia } from 'src/app/@core/models/dependencia';
+import { CodigosService } from '@udistrital/planeacion-utilidades-module';
 
 @Component({
   selector: 'app-tabla-formulacion',
@@ -41,6 +41,8 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   datosCargados: boolean;
   rol!: string;
 
+  CODIGO_TIPO_PROYECTO!: string;
+
   @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
     new MatPaginatorIntl(),
     ChangeDetectorRef.prototype
@@ -50,9 +52,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   private autenticationService = new ImplicitAutenticationService();
   private serviceCookies = new ServiceCookies();
 
+  private codigosService = new CodigosService();
+
   constructor(
     private request: RequestManager,
-    private codigosEstados: CodigosEstados,
     private router: Router
   ) {
     this.planesInteres = [];
@@ -79,7 +82,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   async ngOnInit() {
-    await this.codigosEstados.cargarIdentificadores();
+    this.CODIGO_TIPO_PROYECTO = await this.codigosService.getId('PLANES_CRUD', 'tipo-plan', 'PR_SP');
 
     if (
       this.rol == 'JEFE_DEPENDENCIA' ||
@@ -284,9 +287,10 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   consultarPlan(plan: PlanFormulacion) {
     const vigencia = this.vigencias.filter(vig => vig.Year === plan.vigencia)
     const auxPlan = this.planes.filter(pl => pl.nombre === plan.nombre)
+    const unidad = this.auxUnidades.filter(und => und.Nombre === plan.dependencia_nombre)
     this.serviceCookies.setCookie("plan", JSON.stringify(auxPlan[0]))
     this.serviceCookies.setCookie("vigencia", JSON.stringify(vigencia[0]))
-    this.serviceCookies.setCookie("unidad", JSON.stringify(this.unidad))
+    this.serviceCookies.setCookie("unidad", JSON.stringify(unidad[0]))
     navigateToUrl(`/formulacion`);
   }
 
@@ -307,6 +311,11 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
         })
       }
     })
+  }
+
+  filterPlanes(data: any) {
+    var dataAux = data.filter((e: { tipo_plan_id: any; }) => e.tipo_plan_id != this.CODIGO_TIPO_PROYECTO);
+    return dataAux.filter((e: { activo: boolean; }) => e.activo == true);
   }
 
   loadPeriodos() {
@@ -393,7 +402,8 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       confirmButtonText: `Sí`,
       cancelButtonText: `No`,
-      showCancelButton: true
+      showCancelButton: true,
+      allowOutsideClick: false,
     }).then((result) => {
       if (result.isConfirmed) {
         this.banderaTodosSeleccionados = true;
@@ -441,15 +451,15 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       icon: 'warning',
       confirmButtonText: `Sí`,
       cancelButtonText: `No`,
-      showCancelButton: true
+      showCancelButton: true,
+      allowOutsideClick: false,
     }).then((result) => {
       if (result.isConfirmed) {
-        this.planesInteres.forEach((plan) => {
+        this.planesInteres.forEach(async (plan) => {
           const auxPlan = {
             ...plan,
             _id: plan.id,
-            estado_plan_id:
-              this.codigosEstados.getIdEstadoPlanRevisionVerificada(),
+            estado_plan_id: await this.codigosService.getId('PLANES_CRUD', 'estado-plan', 'RV_SP'),
           };
           this.request.put(environment.PLANES_CRUD, `plan`, auxPlan, auxPlan._id).subscribe({
             next: (data: DTO) => {
