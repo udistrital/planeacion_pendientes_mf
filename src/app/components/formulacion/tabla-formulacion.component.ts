@@ -85,7 +85,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
     this.CODIGO_TIPO_PROYECTO = await this.codigosService.getId('PLANES_CRUD', 'tipo-plan', 'PR_SP');
     print("1", this.CODIGO_TIPO_PROYECTO)
     this.request.get(environment.PLANES_CRUD, `tipo-plan?query=codigo_abreviacion:PR_SP,activo:true`).subscribe({
-      next: (data: DataRequest) => {
+      next: (data: any) => {
         if (data.Data[0]) {
           print("2", data.Data[0]._id);
         }
