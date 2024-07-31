@@ -82,15 +82,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   }
 
   async ngOnInit() {
-    // this.CODIGO_TIPO_PROYECTO = await this.codigosService.getId('PLANES_CRUD', 'tipo-plan', 'PR_SP');
-    // console.log("1", this.CODIGO_TIPO_PROYECTO)
-    this.request.get(environment.PLANES_CRUD, `tipo-plan?query=codigo_abreviacion:PR_SP,activo:true`).subscribe({
-      next: (data: any) => {
-        if (data.Data[0]) {
-          console.log("2", data.Data[0]._id);
-        }
-      },
-    });
+    this.CODIGO_TIPO_PROYECTO = await this.codigosService.getId('PLANES_CRUD', 'tipo-plan', 'PR_SP');
 
     if (
       this.rol == 'JEFE_DEPENDENCIA' ||
