@@ -301,6 +301,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
       next: (data: DTO) => {
         if (data) {
           this.planes = data.Data as Plan[]
+          this.planes = this.filterPlanes(this.planes);
         }
       },
       error: (error) => {
