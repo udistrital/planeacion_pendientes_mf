@@ -21,6 +21,8 @@ import { CodigosService } from '@udistrital/planeacion-utilidades-module';
   styleUrls: ['./tabla-seguimiento.component.scss'],
 })
 export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
+  CODIGO_ESTADO_A_SP!: string;
+
   columnasMostradas: string[] = [
     'dependencia',
     'vigencia',
@@ -81,6 +83,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
   }
 
   async ngOnInit() {
+    this.CODIGO_ESTADO_A_SP = await this.codigosService.getId('PLANES_CRUD', 'estado-plan', 'A_SP');
     this.informacionTabla = new MatTableDataSource<Seguimiento>([]);
     this.informacionTabla.filterPredicate = (data, _) => this.filtroTabla(data)
     this.informacionTabla.paginator = this.paginator;
@@ -284,7 +287,7 @@ export class TablaSeguimientoComponent implements OnInit, AfterViewInit {
           Swal.showLoading();
         },
       })
-      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${await this.codigosService.getId('PLANES_CRUD', 'estado-plan', 'A_SP')},dependencia_id:${this.unidad.Id},dependencia_id:${this.unidad.Id}`).subscribe({
+      this.request.get(environment.PLANES_CRUD, `plan?query=activo:true,estado_plan_id:${this.CODIGO_ESTADO_A_SP},dependencia_id:${this.unidad.Id},dependencia_id:${this.unidad.Id}`).subscribe({
         next: async (data: DTO) => {
           if (data) {
             if (data.Data.length != 0) {

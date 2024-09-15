@@ -43,6 +43,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
   rol!: string;
 
   CODIGO_TIPO_PROYECTO!: string;
+  CODIGO_ESTADO_RV_SP!: string;
 
   @ViewChild(MatPaginator) paginator: MatPaginator = new MatPaginator(
     new MatPaginatorIntl(),
@@ -85,6 +86,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
 
   async ngOnInit() {
     this.CODIGO_TIPO_PROYECTO = await this.codigosService.getId('PLANES_CRUD', 'tipo-plan', 'PR_SP');
+    this.CODIGO_ESTADO_RV_SP = await this.codigosService.getId('PLANES_CRUD', 'estado-plan', 'RV_SP');
 
     if (
       this.rol == 'JEFE_DEPENDENCIA' ||
@@ -462,7 +464,7 @@ export class TablaFormulacionComponent implements OnInit, AfterViewInit {
           const auxPlan = {
             ...plan,
             _id: plan.id,
-            estado_plan_id: await this.codigosService.getId('PLANES_CRUD', 'estado-plan', 'RV_SP'),
+            estado_plan_id: this.CODIGO_ESTADO_RV_SP,
           };
           this.request.put(environment.PLANES_CRUD, `plan`, auxPlan, auxPlan._id).subscribe({
             next: (data: DTO) => {
